@@ -32,7 +32,7 @@
 #include <EEPROM.h> // EEPROM on microcontroller
 #include <Fat16.h> // FAT16 CD card library
 #include <Fat16util.h>
-#include "lumberdaq.h"
+#include "t400.h"
 
 
 #include "buttons.h"
