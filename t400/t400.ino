@@ -24,34 +24,25 @@
  */
 
 // Import libraries
-#include "U8glib.h" // LCD
-#include <Wire.h> // i2c
-#include "MCP3424.h" // ADC
-#include <MCP980X.h> // Ambient/junction temperature sensor
-#include "ds3231.h" // RTC
-#include <EEPROM.h> // EEPROM on microcontroller
-#include <Fat16.h> // FAT16 CD card library
+#include "U8glib.h"     // LCD
+#include <Wire.h>       // i2c
+#include <MCP3424.h>    // ADC
+#include <MCP980X.h>    // Ambient/junction temperature sensor
+#include <ds3231.h>     // RTC
+#include <Fat16.h>      // FAT16 SD card library
 #include <Fat16util.h>
-#include "t400.h"
 
-
-#include "buttons.h"
-#include "typek_constant.h"
-#include "functions.h"
-#include "sd.h"
-#include "lumberdaq.h"
-
-
-// Compile-time settings. Some of these should be set by the user during operation.
-#define LOG_INTERVAL     10 // millseconds between entries
-#define SENSOR_COUNT     3 // number of analog pins to log
-#define SYNC_INTERVAL    1000 // mills between calls to sync()
+#include "power.h"            // Manage board power
+#include "buttons.h"          // User buttons
+#include "typek_constant.h"   // Thermocouple calibration table
+#include "functions.h"        // Misc. functions
+#include "sd.h"               // SD card utilities
+#include "t400.h"             // Board definitions
 
 #define BUFF_MAX         128 // Size of the character buffer
 
 
-Fat16 file; // The logging file
-char fileName[] = "LD00.CSV";
+char fileName[] =        "LD00.CSV";
 
 // Graphical LCD
 // LumberDAQ v0.4 pins: SCK, MOSI, CS, A0, RST
@@ -66,35 +57,23 @@ MCP3424      ADC1(0x69, 0, 2);  // address, gain, resolution
 
 MCP980X ambientSensor(0);      // Ambient temperature sensor
 
-
-float temp1 =    -888.8;   // Thermocouple 1 temperature
-float temp2 =    -888.8;   // Thermocouple 2 temperature
-float temp3 =    -888.8;   // Thermocouple 3 temperature
-float temp4 =    -888.8;   // Thermocouple 4 temperature
+float temperatures[SENSOR_COUNT];
 float ambient =  0;        // Ambient temperature
 
 // Graph data
 byte graph[100][4]={}; // define the size of the data array
 
-
-int lcd_bl_state       = 0;
-int BATT_STAT_state    = 0;
-
-uint32_t syncTime      = 0;     // time of last sync()
 uint32_t logTime       = 0;      // time data was logged
 
 
 // This function runs once. Use it for setting up the program state.
 void setup(void) {
-    
-  // Turn the power selector on so the board stays on!
-  pinMode(PWR_ONOFF_PIN, OUTPUT);
-  digitalWrite(PWR_ONOFF_PIN, HIGH);
+  powerOn();
   
   Serial.begin(9600);
   Wire.begin(); // Start using the Wire library; does the i2c communication.
   
-  initSd(file, fileName, SENSOR_COUNT);
+  initSd(fileName);
   
   pinMode(BATTERY_STATUS_PIN, INPUT);
 
@@ -143,10 +122,11 @@ void loop() {
   Serial.print(buff);
   
   ambient = ambientSensor.readTempC16(AMBIENT) / 16.0;
-  temp1 = GetTypKTemp((ADC1.getChannelmV(2))*1000)+ambient;
-  temp2 = GetTypKTemp((ADC1.getChannelmV(3))*1000)+ambient;
-  temp3 = GetTypKTemp((ADC1.getChannelmV(0))*1000)+ambient;
-  temp4 = GetTypKTemp((ADC1.getChannelmV(1))*1000)+ambient;
+  temperatures[0] = GetTypKTemp((ADC1.getChannelmV(2))*1000)+ambient;
+  temperatures[1] = GetTypKTemp((ADC1.getChannelmV(3))*1000)+ambient;
+  temperatures[2] = GetTypKTemp((ADC1.getChannelmV(0))*1000)+ambient;
+  temperatures[3] = GetTypKTemp((ADC1.getChannelmV(1))*1000)+ambient;
+  
   DEBUG_PRINTLN((ADC1.getChannelmV(2))*1000);
   DEBUG_PRINTLN(GetTypKTemp((ADC1.getChannelmV(2))*1000));
   DEBUG_PRINTLN(temp1);
@@ -154,18 +134,21 @@ void loop() {
   Serial.print(", ");
   Serial.print(ambient);
   Serial.print(", ");
-  Serial.print(temp1);
-  Serial.print(", ");
-  Serial.print(temp2);
-  Serial.print(", ");
-  Serial.print(temp3);
-  Serial.print(", ");
-  Serial.print(temp4);
-  Serial.println("");
+  for(uint8_t i = 0; i < SENSOR_COUNT; i++) {
+    Serial.print(temperatures[i]);
+    Serial.print(", ");
+  }
+  
   
   u8g.firstPage();  // Update the screen
   do {
-    draw(u8g, temp1, temp2, temp3, temp4, ambient, fileName, graph, sizeof(graph));
+    draw(u8g,
+      temperatures,
+      ambient,
+      fileName,
+      graph,
+      sizeof(graph)
+    );
   } 
   while( u8g.nextPage() );
 
@@ -176,10 +159,10 @@ void loop() {
     graph[i][3] = graph[i-1][3];
   };
   
-  graph[0][0] = 64-temp1+5;
-  graph[0][1] = 64-temp2+5;
-  graph[0][2] = 64-temp3+5;
-  graph[0][3] = 64-temp4+5;
+  graph[0][0] = 64 - temperatures[0] + 5;
+  graph[0][1] = 64 - temperatures[1] + 5;
+  graph[0][2] = 64 - temperatures[2] + 5;
+  graph[0][3] = 64 - temperatures[3] + 5;
 
   // Comment out these debug lines and save 32 bytes
   DEBUG_PRINT("DEBUG: Available RAM = ");
@@ -197,29 +180,15 @@ void loop() {
   // wait till time is an exact multiple of LOG_INTERVAL
   do {
     logTime = millis();
-  } 
-  while (m == logTime || logTime % LOG_INTERVAL);
-  // log time to file
-  file.print(logTime);
-
-  // add sensor data 
-  for (uint8_t ia = 0; ia < SENSOR_COUNT; ia++) {
-    uint16_t data = analogRead(ia);
-    file.write(',');
-    file.print(data);
   }
-  file.println();
-
-  if (file.writeError) error("write data");
-
-  //don't sync too often - requires 2048 bytes of I/O to SD card
-  if ((millis() - syncTime) <  SYNC_INTERVAL) return;
-  syncTime = millis();
-  if (!file.sync()) error("sync");
+  while (m == logTime || logTime % LOG_INTERVAL);
+  
+  logToSd(logTime, ambient, temperatures);
 
   //  Read the switches
-  BATT_STAT_state = digitalRead(BATTERY_STATUS_PIN);
-  DEBUG_PRINT("Battery full = ");DEBUG_PRINTLN(BATT_STAT_state);
+  uint16_t BATT_STAT_state = digitalRead(BATTERY_STATUS_PIN);
+  DEBUG_PRINT("Battery full = ");
+  DEBUG_PRINTLN(BATT_STAT_state);
   
   if(userButtons.isPressed()) {
     uint8_t button = userButtons.getPressed();
@@ -229,7 +198,8 @@ void loop() {
     
     if(button == BUTTON_POWER) {
       Serial.print("Powering off!");
-      digitalWrite(PWR_ONOFF_PIN, LOW);
+      closeSd();
+      powerOff();
     }
   }
 }

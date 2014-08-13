@@ -1,9 +1,6 @@
 #ifndef BUTTONS_H
 #define BUTTONS_H
 
-//#include <util/atomic.h>
-//#include "Types.hh"
-//#include "Timeout.hh"
 #include <arduino.h>
 
 // Button names

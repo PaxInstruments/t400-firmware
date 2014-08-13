@@ -1,6 +1,10 @@
 #include "sd.h"
+#include "t400.h"
 
-SdCard card; // The SD card
+SdCard card;     // The SD card
+Fat16 file;      // The logging file
+
+uint32_t syncTime      = 0;     // time of last sync()
 
 void error_P(const char* str) {
   // Print error codes stored in flash
@@ -13,7 +17,7 @@ void error_P(const char* str) {
   while(1);
 }
 
-void initSd(Fat16& file, char* fileName, int sensorCount) {
+void initSd(char* fileName) {
 
   // initialize the SD card
   if (!card.init()) error("card.init");
@@ -28,7 +32,7 @@ void initSd(Fat16& file, char* fileName, int sensorCount) {
     // O_CREAT - create the file if it does not exist
     // O_EXCL - fail if the file exists
     // O_WRITE - open for write only
-    if (file.open(fileName, O_CREAT | O_EXCL | O_WRITE))break;
+    if (file.open(fileName, O_CREAT | O_EXCL | O_WRITE)) break;
   }
   if (!file.isOpen()) error ("create");
   PgmPrint("Logging to: ");
@@ -40,7 +44,7 @@ void initSd(Fat16& file, char* fileName, int sensorCount) {
   file.writeError = false;
   file.print("millis");
 
-  for (uint8_t i = 0; i < sensorCount; i++) {
+  for (uint8_t i = 0; i < SENSOR_COUNT; i++) {
     file.print(",sens");
     file.print(i, DEC);    
   }
@@ -52,4 +56,47 @@ void initSd(Fat16& file, char* fileName, int sensorCount) {
   if (file.writeError || !file.sync()) {
     error("write header");
   }
+}
+
+void closeSd() {
+  if(file.isOpen()) {
+    syncSd(true);
+    file.close();
+  }
+}
+
+void logToSd(uint32_t logTime, float ambient, float* temperatures) {
+  
+  if(file.isOpen()) {
+    return;
+  }
+  
+  // log time to file
+  file.print(logTime);
+  file.write(',');
+  file.print(ambient);
+  for(uint8_t i = 0; i < SENSOR_COUNT; i++) {
+    file.write(',');    
+    file.print(temperatures[i]);
+  }
+  file.println();
+
+  if (file.writeError) error("write data");
+  syncSd(false);
+}
+
+void syncSd(boolean force) {
+  
+  if(file.isOpen()) {
+    return;
+  }
+  
+  //don't sync too often - requires 2048 bytes of I/O to SD card
+  
+  if (!force && (millis() - syncTime) <  SYNC_INTERVAL) {
+    return;
+  }
+  
+  syncTime = millis();
+  if (!file.sync()) error("sync");
 }

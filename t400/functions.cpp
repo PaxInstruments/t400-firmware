@@ -15,23 +15,23 @@ void createDataArray(byte graph[100][4], int length) {
   };
 }
 
-void draw(U8GLIB_LM6063& u8g, float temp1, float temp2, float temp3, float temp4, float ambient, char* fileName, byte graph[100][4], int length) {
+void draw(U8GLIB_LM6063& u8g, float* temperatures, float ambient, char* fileName, byte graph[100][4], int length) {
   // Graphic commands to redraw the complete screen should be placed here
 
   u8g.setFont(u8g_font_5x8); // Select font. See https://code.google.com/p/u8glib/wiki/fontsize
   
   // Display temperature readings
   char buffer[8];
-  u8g.drawStr(0, 6, dtostrf(temp1,5,1,buffer)); // Display TC1 temperature
-  u8g.drawStr(34, 6, dtostrf(temp2,5,1,buffer)); // Display TC2 temperature
-  u8g.drawStr(68, 6, dtostrf(temp3,5,1,buffer)); // Display TC3 temperature
-  u8g.drawStr(102, 6, dtostrf(temp4,5,1,buffer)); // Display TC4 temperature
+  u8g.drawStr(0,   6,  dtostrf(temperatures[0], 5, 1, buffer)); // Display TC1 temperature
+  u8g.drawStr(34,  6,  dtostrf(temperatures[0], 5, 1, buffer)); // Display TC2 temperature
+  u8g.drawStr(68,  6,  dtostrf(temperatures[0], 5, 1, buffer)); // Display TC3 temperature
+  u8g.drawStr(102, 6,  dtostrf(temperatures[0], 5, 1, buffer)); // Display TC4 temperature
 
   // Draw brackets around the thermocouple readings
-  u8g.drawLine(0, 7, 132, 7); // hline across screen
-  u8g.drawLine(31, 0, 31, 7); // vline between TC1 and TC2
-  u8g.drawLine(65, 0, 65, 7); // vline between TC2 and TC3
-  u8g.drawLine(99, 0, 99, 7); // vline between TC3 and TC4
+  u8g.drawLine( 0, 7, 132, 7);  // hline across screen
+  u8g.drawLine(31, 0,  31, 7);  // vline between TC1 and TC2
+  u8g.drawLine(65, 0,  65, 7);  // vline between TC2 and TC3
+  u8g.drawLine(99, 0,  99, 7);  // vline between TC3 and TC4
   
  // u8g.drawLine(0, 16, 132, 16); // hline across screen
 

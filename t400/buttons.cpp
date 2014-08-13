@@ -1,5 +1,5 @@
 #include "buttons.h"
-#include "lumberdaq.h"
+#include "t400.h"
 
 #include <util/atomic.h>
 

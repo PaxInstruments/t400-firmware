@@ -1,5 +1,11 @@
 // Hardware definitions for the LumberDaq
 
+// Compile-time settings. Some of these should be set by the user during operation.
+#define LOG_INTERVAL     10      // millseconds between entries
+#define SYNC_INTERVAL    1000    // millis between calls to sync()
+
+#define SENSOR_COUNT     4       // Number of sensors on the board (fixed)
+
 // Pin definitions
 #define BUTTON_A_PIN      4
 #define BUTTON_B_PIN      12
