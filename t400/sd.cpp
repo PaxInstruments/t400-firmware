@@ -14,7 +14,9 @@ void error_P(const char* str) {
     PgmPrint("SD error: ");
     Serial.println(card.errorCode, HEX);
   }
-  while(1);
+  
+  // Stop the SD card
+  closeSd();
 }
 
 void initSd(char* fileName) {
@@ -26,20 +28,29 @@ void initSd(char* fileName) {
   if (!Fat16::init(&card)) error("Fat16::init");
 
   // Create LOGGERxy.CSV for the lowest values of x and y.
+  // TODO: Make this work for variable groups of 0.
   for (uint8_t i = 0; i < 100; i++) {
-    fileName[2] = i/10 + '0';
-    fileName[3] = i%10 + '0';
+    fileName[2] = (i/100) % 10 + '0';
+    fileName[3] = (i/10)  % 10 + '0';
+    fileName[4] = i       % 10 + '0';
     // O_CREAT - create the file if it does not exist
     // O_EXCL - fail if the file exists
     // O_WRITE - open for write only
-    if (file.open(fileName, O_CREAT | O_EXCL | O_WRITE)) break;
+    if (file.open(fileName, O_CREAT | O_EXCL | O_WRITE)) {
+      break;
+    }
   }
-  if (!file.isOpen()) error ("create");
+  
+  if (!file.isOpen()) { 
+    error ("create");
+  }
+  
   PgmPrint("Logging to: ");
   Serial.println(fileName);
 
-  // write data header
 
+  // write data header
+  
   // clear write error
   file.writeError = false;
   file.print("millis");
@@ -49,6 +60,7 @@ void initSd(char* fileName) {
     file.print(i, DEC);    
   }
   file.println();  
+
 #if ECHO_TO_SERIAL
   Serial.println();
 #endif  //ECHO_TO_SERIAL
@@ -67,7 +79,7 @@ void closeSd() {
 
 void logToSd(uint32_t logTime, float ambient, float* temperatures) {
   
-  if(file.isOpen()) {
+  if(!file.isOpen()) {
     return;
   }
   
@@ -87,7 +99,7 @@ void logToSd(uint32_t logTime, float ambient, float* temperatures) {
 
 void syncSd(boolean force) {
   
-  if(file.isOpen()) {
+  if(!file.isOpen()) {
     return;
   }
   

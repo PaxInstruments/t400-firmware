@@ -1,8 +1,10 @@
 /*
-  LumberDAQ-0.4 Firmware
+  t400-0.4 Firmware
  
  Notes
  =====
+ - Use 'Arduino Lilypad USB' as the Arduino type when compiling
+ 
  - Including a second smaller font adds an additional 876 bytes. Use only one font.
  - Check all the variables. Reduce their size as much as possible.
  - Determine the best ballance between TC lookup table accurace and memory space. 542 bytes of flash, 106 bytes of RAM.
@@ -42,10 +44,10 @@
 #define BUFF_MAX         128 // Size of the character buffer
 
 
-char fileName[] =        "LD00.CSV";
+char fileName[] =        "LD000.CSV";
 
 // Graphical LCD
-// LumberDAQ v0.4 pins: SCK, MOSI, CS, A0, RST
+// t400 v0.4 pins: SCK, MOSI, CS, A0, RST
 // open u8g_dev_st7565_lm6063.c and set width to 132. Use "u8g.setContrast(0x018*8);"
 U8GLIB_LM6063  u8g(A3, A5, A4); // Use HW-SPI
 
@@ -53,15 +55,17 @@ U8GLIB_LM6063  u8g(A3, A5, A4); // Use HW-SPI
 Buttons        userButtons;
 
 // MCP3424 for thermocouple measurements
-MCP3424      ADC1(0x69, 0, 2);  // address, gain, resolution
+MCP3424      ADC1(MCP3424_ADDR, 0, 2);  // address, gain, resolution
 
 MCP980X ambientSensor(0);      // Ambient temperature sensor
 
 float temperatures[SENSOR_COUNT];
 float ambient =  0;        // Ambient temperature
 
-// Graph data
-byte graph[100][4]={}; // define the size of the data array
+static uint8_t temperatureChannels[SENSOR_COUNT] = {2, 3, 0, 1};
+
+//// Graph data
+byte graph[100][SENSOR_COUNT]={}; // define the size of the data array
 
 uint32_t logTime       = 0;      // time data was logged
 
@@ -71,7 +75,9 @@ void setup(void) {
   powerOn();
   
   Serial.begin(9600);
+  
   Wire.begin(); // Start using the Wire library; does the i2c communication.
+  TWBR = 24; // TWBR=12 sets the i2c SCK to 400 kHz on an 8 MHz clock. Comment out to run at 100 kHz
   
   initSd(fileName);
   
@@ -95,7 +101,10 @@ void setup(void) {
   ambientSensor.begin();
   ambientSensor.writeConfig(ADC_RES_12BITS);
 
-  DS3231_init(DS3231_INTCN);
+  // Set up the RTC
+//  DS3231_init(DS3231_INTCN);
+//  DS3231_clear_a1f();
+//  set_next_alarm();
   
   userButtons.setup();
   
@@ -120,25 +129,24 @@ void loop() {
   DS3231_get(&t);
   snprintf(buff, BUFF_MAX, "%02d:%02d:%02d", t.hour, t.min, t.sec);
   Serial.print(buff);
-  
+
   ambient = ambientSensor.readTempC16(AMBIENT) / 16.0;
-  temperatures[0] = GetTypKTemp((ADC1.getChannelmV(2))*1000)+ambient;
-  temperatures[1] = GetTypKTemp((ADC1.getChannelmV(3))*1000)+ambient;
-  temperatures[2] = GetTypKTemp((ADC1.getChannelmV(0))*1000)+ambient;
-  temperatures[3] = GetTypKTemp((ADC1.getChannelmV(1))*1000)+ambient;
   
-  DEBUG_PRINTLN((ADC1.getChannelmV(2))*1000);
-  DEBUG_PRINTLN(GetTypKTemp((ADC1.getChannelmV(2))*1000));
-  DEBUG_PRINTLN(temp1);
+  for(uint8_t i = 0; i < SENSOR_COUNT; i++) {
+    float mV = ADC1.getChannelmV(temperatureChannels[i]);
+    temperatures[i] = GetTypKTemp(mV)*1000 + ambient;
+    
+    delay(50);  // Wait a small time, or the ADC might get stuck with a read error
+  }
   
   Serial.print(", ");
   Serial.print(ambient);
-  Serial.print(", ");
-  for(uint8_t i = 0; i < SENSOR_COUNT; i++) {
-    Serial.print(temperatures[i]);
-    Serial.print(", ");
-  }
   
+  for(uint8_t i = 0; i < SENSOR_COUNT; i++) {
+    Serial.print(", ");
+    Serial.print(temperatures[i]);
+  }
+  Serial.print("\n");
   
   u8g.firstPage();  // Update the screen
   do {
@@ -152,6 +160,7 @@ void loop() {
   } 
   while( u8g.nextPage() );
 
+  // Copy the new temperature data points into the graph array
   for(int i = sizeof(graph)/(4*sizeof(byte))-1; i>0;i--){
     graph[i][0] = graph[i-1][0];
     graph[i][1] = graph[i-1][1];
@@ -163,11 +172,7 @@ void loop() {
   graph[0][1] = 64 - temperatures[1] + 5;
   graph[0][2] = 64 - temperatures[2] + 5;
   graph[0][3] = 64 - temperatures[3] + 5;
-
-  // Comment out these debug lines and save 32 bytes
-  DEBUG_PRINT("DEBUG: Available RAM = ");
-  DEBUG_PRINT(FreeRam());
-  DEBUG_PRINTLN(" bytes");
+  
   
 #ifdef DEBUG
   Serial.print(("DEBUG: Available RAM = "));
@@ -183,7 +188,7 @@ void loop() {
   }
   while (m == logTime || logTime % LOG_INTERVAL);
   
-  logToSd(logTime, ambient, temperatures);
+//  logToSd(logTime, ambient, temperatures);
 
   //  Read the switches
   uint16_t BATT_STAT_state = digitalRead(BATTERY_STATUS_PIN);
@@ -201,7 +206,12 @@ void loop() {
       closeSd();
       powerOff();
     }
+    else if(button == BUTTON_A) {
+      
+    }
   }
+  
+  delay(200);
 }
 
 

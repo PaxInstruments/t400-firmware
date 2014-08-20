@@ -1,10 +1,15 @@
-// Hardware definitions for the LumberDaq
+// Hardware definitions for the t400
 
 // Compile-time settings. Some of these should be set by the user during operation.
 #define LOG_INTERVAL     10      // millseconds between entries
 #define SYNC_INTERVAL    1000    // millis between calls to sync()
 
 #define SENSOR_COUNT     4       // Number of sensors on the board (fixed)
+
+
+/// I2C addresses
+#define MCP3424_ADDR    0x69
+
 
 // Pin definitions
 #define BUTTON_A_PIN      4
@@ -26,7 +31,7 @@
 
 // Creates a funciton for printing to serial during debugging.
 #if DEBUG
-#define DEBUG_PRINT(x)  Serial.print (x)
+#define DEBUG_PRINT(x)    Serial.print (x)
 #define DEBUG_PRINTLN(x)  Serial.println (x)
 #else
 #define DEBUG_PRINT(x)
