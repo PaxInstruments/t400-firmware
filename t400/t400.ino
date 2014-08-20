@@ -51,6 +51,7 @@ char fileName[] =        "LD000.CSV";
 // open u8g_dev_st7565_lm6063.c and set width to 132. Use "u8g.setContrast(0x018*8);"
 U8GLIB_LM6063  u8g(A3, A5, A4); // Use HW-SPI
 
+
 // User buttons
 Buttons        userButtons;
 
@@ -60,15 +61,17 @@ MCP3424      ADC1(MCP3424_ADDR, 0, 2);  // address, gain, resolution
 MCP980X ambientSensor(0);      // Ambient temperature sensor
 
 float temperatures[SENSOR_COUNT];
-float ambient =  0;        // Ambient temperature
-
 static uint8_t temperatureChannels[SENSOR_COUNT] = {2, 3, 0, 1};
+float ambient =  0;        // Ambient temperature
 
 //// Graph data
 byte graph[100][SENSOR_COUNT]={}; // define the size of the data array
 
-uint32_t logTime       = 0;      // time data was logged
 
+unsigned long lastLogTime = 0;   // time data was logged
+#define LOG_INTERVAL_COUNT 6
+uint8_t logIntervals[LOG_INTERVAL_COUNT] = {2, 5, 10, 15, 30, 60};  // Available log intervals, in seconds
+uint8_t logInterval    = 0;       // currently selected log interval
 
 // This function runs once. Use it for setting up the program state.
 void setup(void) {
@@ -82,8 +85,9 @@ void setup(void) {
   initSd(fileName);
   
   pinMode(BATTERY_STATUS_PIN, INPUT);
-
-  createDataArray(graph, sizeof(graph)); // Create the data array
+  
+  // Initialize the data array to a known starting value
+  memset(graph, -1, sizeof(graph));
   
   #if DEBUG_LCD
     u8g.setContrast(0x018*8); // Set contrast level
@@ -111,18 +115,18 @@ void setup(void) {
   // Turn on the high-speed interrupt loop
   // TODO: Adjust interrupt speed.
   noInterrupts();
-  TCCR4A = 0;
-  TCCR4B = 0;
-  TCCR4B |= (1 << CS41);    // 8 prescaler 
-  TIMSK4 |= (1 << TOIE4);   // enable timer overflow interrupt
+    TCCR4A = 0;
+    TCCR4B = 0;
+    TCCR4B |= (1 << CS41);    // 8 prescaler 
+    TIMSK4 |= (1 << TOIE4);   // enable timer overflow interrupt
   interrupts();             // enable all interrupts
+  
+  // Schedule the first read for 100ms in the future
+  lastLogTime = millis() - logIntervals[logInterval]*1000 + 100;
 }
 
 
-// This function is called periodically, and performs slow tasks:
-// Taking measurements
-// Updating the screen
-void loop() {
+void updateData() {
   // RTC stuff
   char buff[BUFF_MAX];
   struct ts t;
@@ -136,7 +140,7 @@ void loop() {
     float mV = ADC1.getChannelmV(temperatureChannels[i]);
     temperatures[i] = GetTypKTemp(mV)*1000 + ambient;
     
-    delay(50);  // Wait a small time, or the ADC might get stuck with a read error
+    delay(120);  // Wait a small time, or the ADC might get stuck with a read error
   }
   
   Serial.print(", ");
@@ -147,19 +151,9 @@ void loop() {
     Serial.print(temperatures[i]);
   }
   Serial.print("\n");
-  
-  u8g.firstPage();  // Update the screen
-  do {
-    draw(u8g,
-      temperatures,
-      ambient,
-      fileName,
-      graph,
-      sizeof(graph)
-    );
-  } 
-  while( u8g.nextPage() );
 
+
+  // TODO: Don't shift the data here, rotate it during display.
   // Copy the new temperature data points into the graph array
   for(int i = sizeof(graph)/(4*sizeof(byte))-1; i>0;i--){
     graph[i][0] = graph[i-1][0];
@@ -172,46 +166,67 @@ void loop() {
   graph[0][1] = 64 - temperatures[1] + 5;
   graph[0][2] = 64 - temperatures[2] + 5;
   graph[0][3] = 64 - temperatures[3] + 5;
-  
-  
-#ifdef DEBUG
-  Serial.print(("DEBUG: Available RAM = "));
-  Serial.print(FreeRam());
-  Serial.println(" bytes");
-  delay(500);
-#endif
+}
 
-  uint32_t m = logTime;
-  // wait till time is an exact multiple of LOG_INTERVAL
-  do {
-    logTime = millis();
+// This function is called periodically, and performs slow tasks:
+// Taking measurements
+// Updating the screen
+void loop() {
+  bool needsRefresh = false;
+  
+  // If enough time has passed, take a new data point
+  if(millis() >= lastLogTime + logIntervals[logInterval]*1000) {
+
+    lastLogTime += logIntervals[logInterval];
+    
+    // If we've gotten out of sync, reset the last log time to now
+    if(abs(lastLogTime - millis()) > 100) {
+      lastLogTime = millis();
+    }
+
+    updateData();
+ 
+    logToSd(lastLogTime, ambient, temperatures);
+    
+    needsRefresh = true;
+    
+  
+//    // TODO: What interval to consider this?
+//  #ifdef DEBUG
+//    Serial.print(("DEBUG: Available RAM = "));
+//    Serial.print(FreeRam());
+//    Serial.println(" bytes");
+//  #endif
   }
-  while (m == logTime || logTime % LOG_INTERVAL);
-  
-//  logToSd(logTime, ambient, temperatures);
-
-  //  Read the switches
-  uint16_t BATT_STAT_state = digitalRead(BATTERY_STATUS_PIN);
-  DEBUG_PRINT("Battery full = ");
-  DEBUG_PRINTLN(BATT_STAT_state);
   
   if(userButtons.isPressed()) {
     uint8_t button = userButtons.getPressed();
-    Serial.print("Button pressed: ");
-    Serial.print(button);
-    Serial.print("\n");
     
     if(button == BUTTON_POWER) {
       Serial.print("Powering off!");
       closeSd();
       powerOff();
     }
-    else if(button == BUTTON_A) {
-      
+    else if(button == BUTTON_B) {
+      logInterval = (logInterval + 1) % LOG_INTERVAL_COUNT;
+      needsRefresh = true;
     }
   }
   
-  delay(200);
+  if(needsRefresh) {
+    uint16_t BATT_STAT_state = digitalRead(BATTERY_STATUS_PIN);
+    DEBUG_PRINT("Battery full = ");
+    DEBUG_PRINTLN(BATT_STAT_state);
+    
+    draw(u8g,
+      temperatures,
+      ambient,
+      fileName,
+      graph,
+      sizeof(graph),
+      logIntervals[logInterval]
+    );
+  }  
 }
 
 
