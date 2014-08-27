@@ -4,7 +4,7 @@
 SdCard card;     // The SD card
 Fat16 file;      // The logging file
 
-uint32_t syncTime      = 0;     // time of last sync()
+uint32_t syncTime      = 0;     // time of last sync(), in millis()
 
 void error_P(const char* str) {
   Serial.print("error: ");
@@ -22,14 +22,19 @@ void error_P(const char* str) {
 void initSd(char* fileName) {
 
   // initialize the SD card
-  if (!card.init()) error("card.init");
+  if (!card.init()) {
+    error("card.init");
+    return;
+  }
 
   // initialize a FAT16 volume
-  if (!Fat16::init(&card)) error("Fat16::init");
+  if (!Fat16::init(&card)) {
+    error("Fat16::init");
+    return;
+  }
 
-  // Create LOGGERxy.CSV for the lowest values of x and y.
-  // TODO: Make this work for variable groups of 0.
-  for (uint8_t i = 0; i < 100; i++) {
+  // Create LDxxxx.CSV for the lowest value of x.
+  for (uint8_t i = 0; i < 1000; i++) {
     fileName[2] = (i/1000) % 10 + '0';
     fileName[3] = (i/100)  % 10 + '0';
     fileName[4] = (i/10)   % 10 + '0';
@@ -78,14 +83,14 @@ void closeSd() {
   }
 }
 
-void logToSd(uint32_t logTime, float ambient, float* temperatures) {
+void logToSd(char* timeString, float ambient, float* temperatures) {
   
   if(!file.isOpen()) {
     return;
   }
   
   // log time to file
-  file.print(logTime);
+  file.print(timeString);
   file.write(',');
   file.print(ambient);
   for(uint8_t i = 0; i < SENSOR_COUNT; i++) {

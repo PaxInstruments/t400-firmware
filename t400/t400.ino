@@ -41,7 +41,7 @@
 #include "sd.h"               // SD card utilities
 #include "t400.h"             // Board definitions
 
-#define BUFF_MAX         128 // Size of the character buffer
+#define BUFF_MAX         40 // Size of the character buffer
 
 
 char fileName[] =        "LD0000.CSV";
@@ -71,9 +71,9 @@ boolean backlightEnabled;
 
 
 unsigned long lastLogTime = 0;   // time data was logged
-#define LOG_INTERVAL_COUNT 6
-uint8_t logIntervals[LOG_INTERVAL_COUNT] = {2, 5, 10, 15, 30, 60};  // Available log intervals, in seconds
-uint8_t logInterval    = 0;       // currently selected log interval
+#define LOG_INTERVAL_COUNT 7
+uint8_t logIntervals[LOG_INTERVAL_COUNT] = {1, 2, 5, 10, 15, 30, 60};  // Available log intervals, in seconds
+uint8_t logInterval    = 1;       // currently selected log interval
 
 // This function runs once. Use it for setting up the program state.
 void setup(void) {
@@ -103,10 +103,7 @@ void setup(void) {
   
   u8g.setRot180(); // Rotate screen
   u8g.setColorIndex(1); // Set color mode to binary
-
-  // This will have to be an option later
-  pinMode(LCD_BACKLIGHT_PIN, OUTPUT); // Set backlight pin as output
-  digitalWrite(LCD_BACKLIGHT_PIN, HIGH); // Turn on backlight
+  
 
   ADC1.begin();
 
@@ -138,9 +135,8 @@ void updateData() {
   // RTC stuff
   char buff[BUFF_MAX];
   struct ts t;
+  
   DS3231_get(&t);
-  snprintf(buff, BUFF_MAX, "%02d:%02d:%02d", t.hour, t.min, t.sec);
-  Serial.print(buff);
 
   ambient = ambientSensor.readTempC16(AMBIENT) / 16.0;
   
@@ -156,6 +152,9 @@ void updateData() {
     temperatures[i] = GetTypKTemp(ADC1.getMeasurement())*1000 + ambient;
   }
   
+  snprintf(buff, BUFF_MAX, "%02d:%02d:%02d", t.hour, t.min, t.sec);
+  Serial.print(buff);
+  
   Serial.print(", ");
   Serial.print(ambient);
   
@@ -164,6 +163,8 @@ void updateData() {
     Serial.print(temperatures[i]);
   }
   Serial.print("\n");
+  
+  logToSd(buff, ambient, temperatures);
 
 
   // TODO: Don't shift the data here, rotate it during display.
@@ -198,8 +199,6 @@ void loop() {
     }
 
     updateData();
- 
-    logToSd(lastLogTime, ambient, temperatures);
     
     needsRefresh = true;
     
