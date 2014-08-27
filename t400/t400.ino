@@ -44,7 +44,7 @@
 #define BUFF_MAX         128 // Size of the character buffer
 
 
-char fileName[] =        "LD000.CSV";
+char fileName[] =        "LD0000.CSV";
 
 // Graphical LCD
 // t400 v0.4 pins: SCK, MOSI, CS, A0, RST
@@ -56,7 +56,7 @@ U8GLIB_LM6063  u8g(A3, A5, A4); // Use HW-SPI
 Buttons        userButtons;
 
 // MCP3424 for thermocouple measurements
-MCP3424      ADC1(MCP3424_ADDR, 0, 2);  // address, gain, resolution
+MCP3424      ADC1(MCP3424_ADDR, MCP342X_GAIN_X4, MCP342X_16_BIT);  // address, gain, resolution
 
 MCP980X ambientSensor(0);      // Ambient temperature sensor
 
@@ -108,6 +108,8 @@ void setup(void) {
   pinMode(LCD_BACKLIGHT_PIN, OUTPUT); // Set backlight pin as output
   digitalWrite(LCD_BACKLIGHT_PIN, HIGH); // Turn on backlight
 
+  ADC1.begin();
+
   ambientSensor.begin();
   ambientSensor.writeConfig(ADC_RES_12BITS);
 
@@ -142,11 +144,16 @@ void updateData() {
 
   ambient = ambientSensor.readTempC16(AMBIENT) / 16.0;
   
+  // ADC read loop: Start a measurement, wait until it is finished, then 
   for(uint8_t i = 0; i < SENSOR_COUNT; i++) {
-    float mV = ADC1.getChannelmV(temperatureChannels[i]);
-    temperatures[i] = GetTypKTemp(mV)*1000 + ambient;
+    ADC1.startMeasurement(temperatureChannels[i]);
+    do {
+      // Delay a while. At 16-bit resolution, the ADC can do a speed of 1/15 = .066seconds/cycle
+      // Let's wait a little longer than that in case there is set up time for changing channels.
+      delay(75);
+    } while(!ADC1.measurementReady());
     
-    delay(120);  // Wait a small time, or the ADC might get stuck with a read error
+    temperatures[i] = GetTypKTemp(ADC1.getMeasurement())*1000 + ambient;
   }
   
   Serial.print(", ");
@@ -230,19 +237,19 @@ void loop() {
   }
   
   if(needsRefresh) {
-    uint16_t BATT_STAT_state = digitalRead(BATTERY_STATUS_PIN);
-    DEBUG_PRINT("Battery full = ");
-    DEBUG_PRINTLN(BATT_STAT_state);
+//    uint16_t BATT_STAT_state = digitalRead(BATTERY_STATUS_PIN);
+//    DEBUG_PRINT("Battery full = ");
+//    DEBUG_PRINTLN(BATT_STAT_state);
     
     draw(u8g,
-      temperatures,
+      temperatures, 
       ambient,
       fileName,
       graph,
       sizeof(graph),
       logIntervals[logInterval]
     );
-  }  
+  }
 }
 
 

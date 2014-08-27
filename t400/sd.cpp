@@ -7,11 +7,11 @@ Fat16 file;      // The logging file
 uint32_t syncTime      = 0;     // time of last sync()
 
 void error_P(const char* str) {
-  // Print error codes stored in flash
-  PgmPrint("error: ");
-  SerialPrintln_P(str);
+  Serial.print("error: ");
+  Serial.print(str);
+  
   if (card.errorCode) {
-    PgmPrint("SD error: ");
+    Serial.print("SD error: ");
     Serial.println(card.errorCode, HEX);
   }
   
@@ -30,9 +30,10 @@ void initSd(char* fileName) {
   // Create LOGGERxy.CSV for the lowest values of x and y.
   // TODO: Make this work for variable groups of 0.
   for (uint8_t i = 0; i < 100; i++) {
-    fileName[2] = (i/100) % 10 + '0';
-    fileName[3] = (i/10)  % 10 + '0';
-    fileName[4] = i       % 10 + '0';
+    fileName[2] = (i/1000) % 10 + '0';
+    fileName[3] = (i/100)  % 10 + '0';
+    fileName[4] = (i/10)   % 10 + '0';
+    fileName[5] = i        % 10 + '0';
     // O_CREAT - create the file if it does not exist
     // O_EXCL - fail if the file exists
     // O_WRITE - open for write only
@@ -45,7 +46,7 @@ void initSd(char* fileName) {
     error ("create");
   }
   
-  PgmPrint("Logging to: ");
+  Serial.println("Logging to:");
   Serial.println(fileName);
 
 
