@@ -284,7 +284,7 @@ void loop() {
       draw(u8g,
         temperatures, 
         ambient,
-        "----------",
+        "Not logging",
         graph,
         sizeof(graph),
         logIntervals[logInterval]

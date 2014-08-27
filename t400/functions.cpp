@@ -61,7 +61,7 @@ void draw(
   
     // Draw interval
     sprintf(buf, "%is", logInterval);
-    u8g.drawStr(88,15, buf);
+    u8g.drawStr(95,15, buf);
   
     // Draw battery
     byte battX = 128;
