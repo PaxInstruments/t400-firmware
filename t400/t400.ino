@@ -71,8 +71,8 @@ boolean backlightEnabled;
 
 
 unsigned long lastLogTime = 0;   // time data was logged
-#define LOG_INTERVAL_COUNT 7
-uint8_t logIntervals[LOG_INTERVAL_COUNT] = {1, 2, 5, 10, 15, 30, 60};  // Available log intervals, in seconds
+#define LOG_INTERVAL_COUNT 6
+uint8_t logIntervals[LOG_INTERVAL_COUNT] = {1, 2, 5, 10, 30, 60};  // Available log intervals, in seconds
 uint8_t logInterval    = 1;       // currently selected log interval
 
 // This function runs once. Use it for setting up the program state.

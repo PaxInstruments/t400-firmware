@@ -59,7 +59,7 @@ void initSd(char* fileName) {
   
   // clear write error
   file.writeError = false;
-  file.print("millis, ambient");
+  file.print("time, ambient");
 
   for (uint8_t i = 0; i < SENSOR_COUNT; i++) {
     file.print(", sens");
