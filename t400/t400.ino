@@ -74,6 +74,7 @@ unsigned long lastLogTime = 0;   // time data was logged
 #define LOG_INTERVAL_COUNT 6
 uint8_t logIntervals[LOG_INTERVAL_COUNT] = {1, 2, 5, 10, 30, 60};  // Available log intervals, in seconds
 uint8_t logInterval    = 1;       // currently selected log interval
+boolean logging = false;          // True if we are currently logging to a file
 
 // This function runs once. Use it for setting up the program state.
 void setup(void) {
@@ -83,8 +84,6 @@ void setup(void) {
   
   Wire.begin(); // Start using the Wire library; does the i2c communication.
   TWBR = 24; // TWBR=12 sets the i2c SCK to 400 kHz on an 8 MHz clock. Comment out to run at 100 kHz
-  
-  initSd(fileName);
   
   pinMode(BATTERY_STATUS_PIN, INPUT);
   
@@ -130,6 +129,23 @@ void setup(void) {
   lastLogTime = millis() - logIntervals[logInterval]*1000 + 100;
 }
 
+void startLogging() {
+  if(logging) {
+    return;
+  }
+  
+  logging = true;
+  initSd(fileName);
+}
+
+void stopLogging() {
+  if(!logging) {
+    return;
+  }
+  
+  logging = false;
+  closeSd();
+}
 
 void updateData() {
   // RTC stuff
@@ -152,19 +168,21 @@ void updateData() {
     temperatures[i] = GetTypKTemp(ADC1.getMeasurement())*1000 + ambient;
   }
   
-  snprintf(buff, BUFF_MAX, "%02d:%02d:%02d", t.hour, t.min, t.sec);
-  Serial.print(buff);
+  if(logging) {
+    snprintf(buff, BUFF_MAX, "%02d:%02d:%02d", t.hour, t.min, t.sec);
+    Serial.print(buff);
   
-  Serial.print(", ");
-  Serial.print(ambient);
-  
-  for(uint8_t i = 0; i < SENSOR_COUNT; i++) {
     Serial.print(", ");
-    Serial.print(temperatures[i]);
-  }
-  Serial.print("\n");
+    Serial.print(ambient);
   
-  logToSd(buff, ambient, temperatures);
+    for(uint8_t i = 0; i < SENSOR_COUNT; i++) {
+      Serial.print(", ");
+      Serial.print(temperatures[i]);
+    }
+    Serial.print("\n");
+  
+    logToSd(buff, ambient, temperatures);
+  }
 
 
   // TODO: Don't shift the data here, rotate it during display.
@@ -216,12 +234,24 @@ void loop() {
     
     if(button == BUTTON_POWER) {
       Serial.print("Powering off!");
-      closeSd();
+      stopLogging();
       powerOff();
     }
-    else if(button == BUTTON_B) {
-      logInterval = (logInterval + 1) % LOG_INTERVAL_COUNT;
+    else if(button == BUTTON_A) {
+      if(!logging) {
+        startLogging();
+      }
+      else {
+        stopLogging();
+      }
+      
       needsRefresh = true;
+    }
+    else if(button == BUTTON_B) {
+      if(!logging) {
+        logInterval = (logInterval + 1) % LOG_INTERVAL_COUNT;
+        needsRefresh = true;
+      }
     }
     else if(button == BUTTON_E) {
       if(backlightEnabled) {
@@ -240,14 +270,26 @@ void loop() {
 //    DEBUG_PRINT("Battery full = ");
 //    DEBUG_PRINTLN(BATT_STAT_state);
     
-    draw(u8g,
-      temperatures, 
-      ambient,
-      fileName,
-      graph,
-      sizeof(graph),
-      logIntervals[logInterval]
-    );
+    if(logging) {
+      draw(u8g,
+        temperatures, 
+        ambient,
+        fileName,
+        graph,
+        sizeof(graph),
+        logIntervals[logInterval]
+      );
+    }
+    else {
+      draw(u8g,
+        temperatures, 
+        ambient,
+        "----------",
+        graph,
+        sizeof(graph),
+        logIntervals[logInterval]
+      );
+    }
   }
 }
 
