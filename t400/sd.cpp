@@ -53,10 +53,10 @@ void initSd(char* fileName) {
   
   // clear write error
   file.writeError = false;
-  file.print("millis");
+  file.print("millis, ambient");
 
   for (uint8_t i = 0; i < SENSOR_COUNT; i++) {
-    file.print(",sens");
+    file.print(", sens");
     file.print(i, DEC);    
   }
   file.println();  

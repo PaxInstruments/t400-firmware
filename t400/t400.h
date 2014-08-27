@@ -19,10 +19,11 @@
 #define BUTTON_E_PIN      1
 #define BUTTON_POWER_PIN  7
 
-#define BUZZER_PIN       13    // Output pin turns buzzer on (active low)
-#define PWR_ONOFF_PIN    11    // Power on/off pin turns board power off (active low)
-#define LCD_BACKLIGHT_PIN  A2 // LCD backlight on pin A2/D16 (active ??)
-#define BATTERY_STATUS_PIN    A0    // Battery status pin
+#define BUZZER_PIN            13    // Output pin turns buzzer on (active low)
+#define PWR_ONOFF_PIN         11    // Power on/off pin turns board power off (active low)
+#define LCD_BACKLIGHT_PIN     A5    // LCD backlight on pin
+#define BATTERY_VBAT_PIN      A6    // Battery voltage pin (analog input)
+#define BATTERY_STATUS_PIN    A7    // Battery status pin
 
 
 #define DEBUG            0 // Debugging code: 0 disable, 1 enable

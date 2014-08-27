@@ -67,6 +67,8 @@ float ambient =  0;        // Ambient temperature
 //// Graph data
 byte graph[100][SENSOR_COUNT]={}; // define the size of the data array
 
+boolean backlightEnabled;
+
 
 unsigned long lastLogTime = 0;   // time data was logged
 #define LOG_INTERVAL_COUNT 6
@@ -85,6 +87,10 @@ void setup(void) {
   initSd(fileName);
   
   pinMode(BATTERY_STATUS_PIN, INPUT);
+  
+  setupBacklight();
+  backlightEnabled = true;
+  enableBacklight();
   
   // Initialize the data array to a known starting value
   memset(graph, -1, sizeof(graph));
@@ -210,6 +216,16 @@ void loop() {
     else if(button == BUTTON_B) {
       logInterval = (logInterval + 1) % LOG_INTERVAL_COUNT;
       needsRefresh = true;
+    }
+    else if(button == BUTTON_E) {
+      if(backlightEnabled) {
+        disableBacklight();
+        backlightEnabled = false;
+      }
+      else {
+        enableBacklight();
+        backlightEnabled = true;
+      }
     }
   }
   
