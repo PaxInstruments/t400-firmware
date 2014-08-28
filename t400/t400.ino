@@ -65,7 +65,9 @@ static uint8_t temperatureChannels[SENSOR_COUNT] = {2, 3, 0, 1};
 float ambient =  0;        // Ambient temperature
 
 //// Graph data
-byte graph[100][SENSOR_COUNT]={}; // define the size of the data array
+#define MAXIMUM_GRAPH_POINTS 100
+uint8_t graph[MAXIMUM_GRAPH_POINTS][SENSOR_COUNT]={}; // define the size of the data array
+uint8_t graphPoints = 0;        // Number of valid points to graph
 
 boolean backlightEnabled;
 
@@ -198,6 +200,10 @@ void updateData() {
   graph[0][1] = 64 - temperatures[1] + 5;
   graph[0][2] = 64 - temperatures[2] + 5;
   graph[0][3] = 64 - temperatures[3] + 5;
+  
+  if(graphPoints < MAXIMUM_GRAPH_POINTS) {
+    graphPoints++;
+  }
 }
 
 // This function is called periodically, and performs slow tasks:
@@ -276,7 +282,7 @@ void loop() {
         ambient,
         fileName,
         graph,
-        sizeof(graph),
+        graphPoints,
         logIntervals[logInterval]
       );
     }
@@ -286,7 +292,7 @@ void loop() {
         ambient,
         "Not logging",
         graph,
-        sizeof(graph),
+        graphPoints,
         logIntervals[logInterval]
       );
     }

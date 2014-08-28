@@ -13,8 +13,8 @@ extern void draw(
   float* temperatures,
   float ambient,
   char* fileName,
-  byte graph[100][4],
-  int length,
+  uint8_t graph[100][4],
+  uint8_t graphPoints,
   uint8_t logInterval
   );
   

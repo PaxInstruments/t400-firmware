@@ -6,6 +6,8 @@
 
 #define SENSOR_COUNT     4       // Number of sensors on the board (fixed)
 
+// Graph display settings
+MAXIMUM_GRAPH_POINTS    100
 
 /// I2C addresses
 #define MCP3424_ADDR    0x69
