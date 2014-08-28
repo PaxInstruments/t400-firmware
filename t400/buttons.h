@@ -4,12 +4,12 @@
 #include <arduino.h>
 
 // Button names
-#define BUTTON_A      0
-#define BUTTON_B      1
-#define BUTTON_C      2
-#define BUTTON_D      3
-#define BUTTON_E      4
-#define BUTTON_POWER  5
+#define BUTTON_A      0 // Start/stop logging
+#define BUTTON_B      1 // Set logging interval
+#define BUTTON_C      2 // Change units
+#define BUTTON_D      3 // Toggle channels
+#define BUTTON_E      4 // Backlight on/off
+#define BUTTON_POWER  5 // Power on/off
 #define BUTTON_COUNT   6  // Number of buttons in the system
 
 
