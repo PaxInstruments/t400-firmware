@@ -235,7 +235,7 @@ void loop() {
     if(button == BUTTON_POWER) {
       Serial.print("Powering off!");
       stopLogging();
-      powerOff();
+      powerOff(u8g);
     }
     else if(button == BUTTON_A) {
       if(!logging) {
