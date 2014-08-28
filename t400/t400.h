@@ -27,7 +27,7 @@
 
 
 #define DEBUG            0 // Debugging code: 0 disable, 1 enable
-#define DEBUG_LCD        1 // Debugging code: 0 disable, 1 enable
+#define DEBUG_LCD        0 // Debugging code: 0 disable, 1 enable
 
 
 // Creates a funciton for printing to serial during debugging.
