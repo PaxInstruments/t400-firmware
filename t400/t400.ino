@@ -38,7 +38,7 @@
 #include "buttons.h"          // User buttons
 #include "typek_constant.h"   // Thermocouple calibration table
 #include "functions.h"        // Misc. functions
-#include "sd.h"               // SD card utilities
+#include "sd_log.h"               // SD card utilities
 #include "t400.h"             // Board definitions
 
 #define BUFF_MAX         40 // Size of the character buffer

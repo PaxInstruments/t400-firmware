@@ -1,5 +1,5 @@
-#ifndef SD_H
-#define SD_H
+#ifndef SD_LOG_H
+#define SD_LOG_H
 
 #include <Fat16.h> // FAT16 CD card library
 #include <Fat16util.h>
