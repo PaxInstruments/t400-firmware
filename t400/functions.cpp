@@ -6,8 +6,8 @@
 
 void draw(
   U8GLIB_LM6063& u8g,
-  float* temperatures,
-  float ambient,
+  double* temperatures,
+  double ambient,
   char* fileName,
   uint8_t graph[100][4],
   uint8_t graphPoints,
@@ -36,9 +36,8 @@ void draw(
     
       // TODO: prerender these strings?
       for(uint8_t i = 0; i < GRAPH_INTERVALS; i++) {
-        sprintf(buf, "%02i", graph_min + graph_step*i);
         u8g.drawPixel(11,61 - i*10);
-        u8g.drawStr(0, 64 - i*10, buf);
+        u8g.drawStr(0, 64 - i*10, dtostrf(graph_min + graph_step*i,2,0,buf));
       }
 
       // Draw labels on the right side of graph
@@ -48,25 +47,25 @@ void draw(
       
       // Display data from graph[][] array to the graph on screen
       for(uint8_t i = 0; i < graphPoints;i++){
-        u8g.drawPixel(MAXIMUM_GRAPH_POINTS-i+12, graph[i][0]); // TC1
-        u8g.drawPixel(MAXIMUM_GRAPH_POINTS-i+12, graph[i][1]); // TC2
-        u8g.drawPixel(MAXIMUM_GRAPH_POINTS-i+12, graph[i][2]); // TC3
-        u8g.drawPixel(MAXIMUM_GRAPH_POINTS-i+12, graph[i][3]); // TC4
+        const uint8_t  x = MAXIMUM_GRAPH_POINTS-i+12;        
+        const uint8_t* pos = graph[i];
+        
+        u8g.drawPixel(x, pos[0]); // TC1
+        u8g.drawPixel(x, pos[1]); // TC2
+        u8g.drawPixel(x, pos[2]); // TC3
+        u8g.drawPixel(x, pos[3]); // TC4
       };
     }
 
     //// Draw status bar
     else if(page == 6) {  
-      // Draw ambient temperature
-      u8g.drawStr(0, 15, dtostrf(ambient,5,1,buf));
+      u8g.drawStr(0,  15, dtostrf(ambient,5,1,buf));         // Ambient temperature
       u8g.drawStr(25, 15, "C");
     
-      // Draw file name
-      u8g.drawStr(35,15,fileName);
+      u8g.drawStr(35, 15,fileName);                          // File name
     
-      // Draw interval
-      sprintf(buf, "%is", logInterval);
-      u8g.drawStr(95, 15, buf);
+      u8g.drawStr( 95, 15, dtostrf(logInterval,2,0,buf));    // Interval
+      u8g.drawStr(105, 15, "s");
     
       // Draw battery
       const uint8_t battX = 128;
@@ -85,7 +84,7 @@ void draw(
     
     //// Draw thermocouple readings
     else if (page == 7) {
-      #define LINE_COUNT 6
+      #define LINE_COUNT 4
       const uint8_t lines[LINE_COUNT][4] = {
         { 0,  7, 132,   7}, // hline between temperatures and status bar
         {31,  0,  31,   7}, // vline between TC1 and TC2
@@ -93,7 +92,8 @@ void draw(
         {99,  0,  99,   7}, // vline between TC3 and TC4
       };
       for (uint8_t i = 0; i < LINE_COUNT; i++) {
-        u8g.drawLine(lines[i][0], lines[i][1], lines[i][2], lines[i][3]);
+        const uint8_t* pos = lines[i];
+        u8g.drawLine(pos[0], pos[1], pos[2], pos[3]);
       }
       
       // Display temperature readings  
@@ -108,16 +108,17 @@ void draw(
   while( u8g.nextPage() );
 }
 
-float GetTypKTemp(float microVolts){
+
+double GetTypKTemp(double microVolts){
   // Converts the thermocouple µV reading into some usable °C
-  if(microVolts > tempTypK[sizeof(tempTypK)/sizeof(float)]){
+  if(microVolts > tempTypK[TEMP_TYPE_K_LENGTH - 1]){
     //Serial.println("Too BIG");
     return 300;
   }
 
-  float LookedupValue;
+  double LookedupValue;
   
-  for(int i = 0; i<sizeof(tempTypK)/sizeof(float);i++){
+  for(uint16_t i = 0; i<TEMP_TYPE_K_LENGTH; i++){
     if(microVolts >= tempTypK[i] && microVolts <= tempTypK[i+1]){
       LookedupValue = (-270 + (i)*10) + ((10 *(microVolts - tempTypK[i])) / ((tempTypK[i+1] - tempTypK[i])));
       break;

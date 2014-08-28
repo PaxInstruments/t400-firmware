@@ -19,7 +19,7 @@ extern void closeSd();
 // @param timeString (input) String describing the current time
 // @param ambient (input) Ambient temperature (units?)
 // @param temperatures (input) Array of sensor data measurements. SENSOR_COUNT length. ? units
-extern void logToSd(char* timeString, float ambient, float* temperatures);
+extern void logToSd(char* timeString, double ambient, double* temperatures);
 
 // Flush the SD card data to disk
 // @param force If true, force the data to be synced

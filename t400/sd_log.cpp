@@ -83,7 +83,7 @@ void closeSd() {
   }
 }
 
-void logToSd(char* timeString, float ambient, float* temperatures) {
+void logToSd(char* timeString, double ambient, double* temperatures) {
   
   if(!file.isOpen()) {
     return;

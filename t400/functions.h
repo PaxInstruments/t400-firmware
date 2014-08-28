@@ -6,12 +6,12 @@
 // Lookup table for converting K-type thermocouple measurements into 
 // @param microVolt reading from the ADC
 // @return Temperature, in ???
-extern float GetTypKTemp(float microVolts);
+extern float GetTypKTemp(double microVolts);
 
 extern void draw(
   U8GLIB_LM6063& u8g,
-  float* temperatures,
-  float ambient,
+  double* temperatures,
+  double ambient,
   char* fileName,
   uint8_t graph[100][4],
   uint8_t graphPoints,

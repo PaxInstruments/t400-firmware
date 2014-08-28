@@ -60,12 +60,11 @@ MCP3424      ADC1(MCP3424_ADDR, MCP342X_GAIN_X4, MCP342X_16_BIT);  // address, g
 
 MCP980X ambientSensor(0);      // Ambient temperature sensor
 
-float temperatures[SENSOR_COUNT];
+double temperatures[SENSOR_COUNT];
 static uint8_t temperatureChannels[SENSOR_COUNT] = {2, 3, 0, 1};
-float ambient =  0;        // Ambient temperature
+double ambient =  0;        // Ambient temperature
 
 //// Graph data
-#define MAXIMUM_GRAPH_POINTS 100
 uint8_t graph[MAXIMUM_GRAPH_POINTS][SENSOR_COUNT]={}; // define the size of the data array
 uint8_t graphPoints = 0;        // Number of valid points to graph
 

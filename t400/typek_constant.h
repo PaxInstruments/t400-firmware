@@ -4,7 +4,9 @@
 //Lookup Table for the TypK:
 // From -270 to 1350°C in steps of 10°C, the list is in µV according to that Temp.
 // If changing the lower limit remember to change it in GetTypKTemp().
-const int tempTypK[] = 
+#define TEMP_TYPE_K_LENGTH 101
+
+const int32_t tempTypK[TEMP_TYPE_K_LENGTH] = 
 { 
   -6458,  //-270
   -6411, // -260
