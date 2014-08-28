@@ -96,17 +96,17 @@ void initSd(char* fileName) {
 }
 
 void closeSd() {
-  if(file.isOpen()) {
+//  if(file.isOpen()) {
     syncSd(true);
     file.close();
-  }
+///  }
 }
 
 void logToSd(char* timeString, float ambient, float* temperatures) {
   
-  if(!file.isOpen()) {
-    return;
-  }
+//  if(!file.isOpen()) {
+//    return;
+//  }
   
   // log time to file
   file.print(timeString);
@@ -118,15 +118,15 @@ void logToSd(char* timeString, float ambient, float* temperatures) {
   }
   file.println();
 
-  if (file.writeError) error("write data");
+//  if (file.writeError) error("write data");
   syncSd(false);
 }
 
 void syncSd(boolean force) {
   
-  if(!file.isOpen()) {
-    return;
-  }
+//  if(!file.isOpen()) {
+//    return;
+//  }
   
   //don't sync too often - requires 2048 bytes of I/O to SD card
   
@@ -135,5 +135,6 @@ void syncSd(boolean force) {
   }
   
   syncTime = millis();
-  if (!file.sync()) error("sync");
+//  if (!file.sync()) error("sync");
+  file.flush();
 }
