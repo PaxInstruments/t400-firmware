@@ -1,6 +1,7 @@
 #include "power.h"
 #include "t400.h"
 #include <arduino.h>
+#include "U8glib.h" // LCD
 
 void powerOn() {
   // Turn the power selector on so the board stays on!
@@ -8,6 +9,10 @@ void powerOn() {
   digitalWrite(PWR_ONOFF_PIN, HIGH);
 }
 
-void powerOff() {
+void powerOff(U8GLIB_LM6063& u8g) {
   digitalWrite(PWR_ONOFF_PIN, LOW);
+  
+  u8g.firstPage();  
+  do {
+  } while( u8g.nextPage() );
 }
