@@ -31,8 +31,9 @@
 #include <MCP3424.h>    // ADC
 #include <MCP980X.h>    // Ambient/junction temperature sensor
 #include <ds3231.h>     // RTC
-#include <Fat16.h>      // FAT16 SD card library
-#include <Fat16util.h>
+//#include <Fat16.h>      // FAT16 SD card library
+//#include <Fat16util.h>
+#include <SD.h>
 
 #include "power.h"            // Manage board power
 #include "buttons.h"          // User buttons

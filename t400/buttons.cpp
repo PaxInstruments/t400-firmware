@@ -1,7 +1,8 @@
+#include <arduino.h>
+#include <util/atomic.h>
+
 #include "buttons.h"
 #include "t400.h"
-
-#include <util/atomic.h>
 
 // Button definitions
 button buttons[BUTTON_COUNT] = {

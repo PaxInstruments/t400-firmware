@@ -1,8 +1,12 @@
 #ifndef SD_LOG_H
 #define SD_LOG_H
 
-#include <Fat16.h> // FAT16 CD card library
-#include <Fat16util.h>
+
+#include <SD.h>
+
+//// TODO: Why are these needed here?
+//#include <Fat16.h> // FAT16 CD card library
+//#include <Fat16util.h>
 
 #define error(s) error_P(PSTR(s)) // store error strings in flash to save RAM
 

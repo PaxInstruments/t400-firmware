@@ -10,7 +10,6 @@
 /// I2C addresses
 #define MCP3424_ADDR    0x69
 
-
 // Pin definitions
 #define BUTTON_A_PIN      4
 #define BUTTON_B_PIN      12
@@ -24,6 +23,8 @@
 #define LCD_BACKLIGHT_PIN     A5    // LCD backlight on pin
 #define BATTERY_VBAT_PIN      A6    // Battery voltage pin (analog input)
 #define BATTERY_STATUS_PIN    A7    // Battery status pin
+
+#define SD_CS_PIN             A11   // SD card select pin
 
 
 #define DEBUG            0 // Debugging code: 0 disable, 1 enable

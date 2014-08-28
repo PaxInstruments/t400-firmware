@@ -1,5 +1,7 @@
-#include <Fat16.h> // FAT16 CD card library
-#include <Fat16util.h>
+#include <arduino.h>
+
+//#include <Fat16.h> // FAT16 CD card library
+//#include <Fat16util.h>
 #include "U8glib.h" // LCD
 #include "typek_constant.h"
 #include "t400.h"

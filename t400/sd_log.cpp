@@ -1,8 +1,17 @@
+#include <arduino.h>
+
 #include "sd_log.h"
 #include "t400.h"
 
-SdCard card;     // The SD card
-Fat16 file;      // The logging file
+#include <SD.h>
+
+//#include <Fat16.h> // FAT16 CD card library
+//#include <Fat16util.h>
+
+//SdCard card;     // The SD card
+//Fat16 file;      // The logging file
+
+File file;         // The logging file
 
 uint32_t syncTime      = 0;     // time of last sync(), in millis()
 
@@ -10,10 +19,10 @@ void error_P(const char* str) {
   Serial.print("error: ");
   Serial.print(str);
   
-  if (card.errorCode) {
-    Serial.print("SD error: ");
-    Serial.println(card.errorCode, HEX);
-  }
+//  if (card.errorCode) {
+//    Serial.print("SD error: ");
+//    Serial.println(card.errorCode, HEX);
+//  }
   
   // Stop the SD card
   closeSd();
@@ -22,16 +31,17 @@ void error_P(const char* str) {
 void initSd(char* fileName) {
 
   // initialize the SD card
-  if (!card.init()) {
+//  if (!card.init()) {
+  if(!SD.begin(SD_CS_PIN)) {
     error("card.init");
     return;
   }
 
-  // initialize a FAT16 volume
-  if (!Fat16::init(&card)) {
-    error("Fat16::init");
-    return;
-  }
+//  // initialize a FAT16 volume
+//  if (!Fat16::init(&card)) {
+//    error("Fat16::init");
+//    return;
+//  }
 
   // Create LDxxxx.CSV for the lowest value of x.
   for (uint8_t i = 0; i < 1000; i++) {
@@ -42,23 +52,32 @@ void initSd(char* fileName) {
     // O_CREAT - create the file if it does not exist
     // O_EXCL - fail if the file exists
     // O_WRITE - open for write only
-    if (file.open(fileName, O_CREAT | O_EXCL | O_WRITE)) {
+//    if (file.open(fileName, O_CREAT | O_EXCL | O_WRITE)) {
+  
+    // If the file already exists, try the next one
+    if(SD.exists(fileName)) {
+      continue;
+    }
+  
+    // Otherwise, try to create a new file for writing
+    file = SD.open(fileName, FILE_WRITE);
+    if(file) {
       break;
     }
   }
   
-  if (!file.isOpen()) { 
-    error ("create");
-  }
-  
+//  if (!file.isOpen()) { 
+//    error ("create");
+//  }
+
+
+  // clear write error
+//  file.writeError = false;
+
   Serial.println("Logging to:");
   Serial.println(fileName);
 
-
   // write data header
-  
-  // clear write error
-  file.writeError = false;
   file.print("time, ambient");
 
   for (uint8_t i = 0; i < SENSOR_COUNT; i++) {
@@ -71,9 +90,9 @@ void initSd(char* fileName) {
   Serial.println();
 #endif  //ECHO_TO_SERIAL
 
-  if (file.writeError || !file.sync()) {
-    error("write header");
-  }
+//  if (file.writeError || !file.sync()) {
+//    error("write header");
+//  }
 }
 
 void closeSd() {
