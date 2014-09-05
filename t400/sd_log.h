@@ -15,11 +15,8 @@ extern void initSd(char* fileName);
 // Call this before powering down the board
 extern void closeSd();
 
-// Log a temperature data point to the SD card
-// @param timeString (input) String describing the current time
-// @param ambient (input) Ambient temperature (units?)
-// @param temperatures (input) Array of sensor data measurements. SENSOR_COUNT length. ? units
-extern void logToSd(char* timeString, double ambient, double* temperatures);
+// Log a message to the SD card
+extern void logToSd(char* message);
 
 // Flush the SD card data to disk
 // @param force If true, force the data to be synced

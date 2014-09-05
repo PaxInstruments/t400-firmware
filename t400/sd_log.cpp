@@ -83,21 +83,13 @@ void closeSd() {
   }
 }
 
-void logToSd(char* timeString, double ambient, double* temperatures) {
-  
+void logToSd(char* message) {
   if(!file.isOpen()) {
     return;
   }
   
   // log time to file
-  file.print(timeString);
-  file.write(',');
-  file.print(ambient);
-  for(uint8_t i = 0; i < SENSOR_COUNT; i++) {
-    file.write(',');    
-    file.print(temperatures[i]);
-  }
-  file.println();
+  file.println(message);
 
   if (file.writeError) error("write data");
   syncSd(false);

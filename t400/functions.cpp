@@ -113,14 +113,17 @@ double GetTypKTemp(double microVolts){
   // Converts the thermocouple µV reading into some usable °C
   if(microVolts > tempTypK[TEMP_TYPE_K_LENGTH - 1]){
     //Serial.println("Too BIG");
-    return 300;
+    return 3000;
+  }
+  if(microVolts < tempTypK[0]) {
+    return 3000;
   }
 
   double LookedupValue;
   
   for(uint16_t i = 0; i<TEMP_TYPE_K_LENGTH; i++){
     if(microVolts >= tempTypK[i] && microVolts <= tempTypK[i+1]){
-      LookedupValue = (-270 + (i)*10) + ((10 *(microVolts - tempTypK[i])) / ((tempTypK[i+1] - tempTypK[i])));
+      LookedupValue = ((double)-270 + (i)*10) + ((10 *(microVolts - tempTypK[i])) / ((tempTypK[i+1] - tempTypK[i])));
       break;
     }
   }

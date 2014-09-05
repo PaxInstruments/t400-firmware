@@ -38,10 +38,10 @@
 #include "buttons.h"          // User buttons
 #include "typek_constant.h"   // Thermocouple calibration table
 #include "functions.h"        // Misc. functions
-#include "sd_log.h"               // SD card utilities
+#include "sd_log.h"           // SD card utilities
 #include "t400.h"             // Board definitions
 
-#define BUFF_MAX         40 // Size of the character buffer
+#define BUFF_MAX         80   // Size of the character buffer
 
 
 char fileName[] =        "LD0000.CSV";
@@ -56,7 +56,7 @@ U8GLIB_LM6063  u8g(A3, A5, A4); // Use HW-SPI
 Buttons        userButtons;
 
 // MCP3424 for thermocouple measurements
-MCP3424      ADC1(MCP3424_ADDR, MCP342X_GAIN_X4, MCP342X_16_BIT);  // address, gain, resolution
+MCP3424      ADC1(MCP3424_ADDR, MCP342X_GAIN_X8, MCP342X_16_BIT);  // address, gain, resolution
 
 MCP980X ambientSensor(0);      // Ambient temperature sensor
 
@@ -169,22 +169,19 @@ void updateData() {
     temperatures[i] = GetTypKTemp(ADC1.getMeasurement())*1000 + ambient;
   }
   
-  if(logging) {
-    snprintf(buff, BUFF_MAX, "%02d:%02d:%02d", t.hour, t.min, t.sec);
-    Serial.print(buff);
-  
-    Serial.print(", ");
-    Serial.print(ambient);
-  
-    for(uint8_t i = 0; i < SENSOR_COUNT; i++) {
-      Serial.print(", ");
-      Serial.print(temperatures[i]);
-    }
-    Serial.print("\n");
-  
-    logToSd(buff, ambient, temperatures);
+  snprintf(buff, BUFF_MAX, "%02d:%02d:%02d, ", t.hour, t.min, t.sec);
+  dtostrf(ambient, 1, 2, buff+strlen(buff));
+    
+  for(uint8_t i = 0; i < SENSOR_COUNT; i++) {
+    strcpy(buff+strlen(buff), ", ");
+    dtostrf(temperatures[i], 1, 2, buff+strlen(buff));
   }
 
+  Serial.println(buff);
+
+  if(logging) {
+    logToSd(buff);
+  }
 
   // TODO: Don't shift the data here, rotate it during display.
   // Copy the new temperature data points into the graph array
