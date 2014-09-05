@@ -165,8 +165,20 @@ void updateData() {
       // Let's wait a little longer than that in case there is set up time for changing channels.
       delay(75);
     } while(!ADC1.measurementReady());
-    
-    temperatures[i] = GetTypKTemp(ADC1.getMeasurement())*1000 + ambient;
+
+    double measurement = GetTypKTemp(ADC1.getMeasurement());
+
+    // For testing
+    if(i == 3) {
+      measurement = OUT_OF_RANGE;
+    }
+
+    if(measurement == OUT_OF_RANGE) {
+      temperatures[i] = OUT_OF_RANGE;
+    }
+    else {
+      temperatures[i] = GetTypKTemp(measurement)*1000 + ambient;
+    }
   }
   
   snprintf(buff, BUFF_MAX, "%02d:%02d:%02d, ", t.hour, t.min, t.sec);

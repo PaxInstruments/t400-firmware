@@ -6,6 +6,8 @@
 
 #define SENSOR_COUNT     4       // Number of sensors on the board (fixed)
 
+#define OUT_OF_RANGE     99999.9 // Double value representing an invalid temp. measurement
+
 // Graph display settings
 #define MAXIMUM_GRAPH_POINTS    100
 

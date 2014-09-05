@@ -97,7 +97,12 @@ void draw(
       
       // Display temperature readings  
       for(uint8_t i = 0; i < SENSOR_COUNT; i++) {
-        u8g.drawStr(i*34,   6,  dtostrf(temperatures[i], 5, 1, buf)); // Display TC1 temperature
+        if(temperatures[i] == OUT_OF_RANGE) {
+          u8g.drawStr(i*34,   6,  " ----");
+        }
+        else {
+          u8g.drawStr(i*34,   6,  dtostrf(temperatures[i], 5, 1, buf));
+        }
       }
     }
     
@@ -110,12 +115,10 @@ void draw(
 
 double GetTypKTemp(double microVolts){
   // Converts the thermocouple µV reading into some usable °C
-  if(microVolts > tempTypK[TEMP_TYPE_K_LENGTH - 1]){
-    //Serial.println("Too BIG");
-    return 3000;
-  }
-  if(microVolts < tempTypK[0]) {
-    return 3000;
+  
+  // Check if it's out of range
+  if(microVolts > tempTypK[TEMP_TYPE_K_LENGTH - 1] || microVolts < tempTypK[0]){
+    return OUT_OF_RANGE;
   }
 
   double LookedupValue;
