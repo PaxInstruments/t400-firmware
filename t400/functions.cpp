@@ -75,11 +75,10 @@ void draw(
       u8g.drawLine(battX+1,  9, battX+2,  9);
     
     
-      // TODO: Battery state
-      //  if(BATT_STAT_state == 1){
-      //  }else{
-      //    u8g.drawLine(battX,14,battX+3,9);
-      //  };
+      uint8_t batteryState = 3;  // Battery state 0-4 (0 = empty, 4=full);
+      for(uint8_t i = 0; i < batteryState; i++) {
+        u8g.drawLine(battX, 13-i, battX+3, 13-i);
+      }
     }
     
     //// Draw thermocouple readings

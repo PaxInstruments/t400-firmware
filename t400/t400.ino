@@ -174,7 +174,7 @@ void updateData() {
     
   for(uint8_t i = 0; i < SENSOR_COUNT; i++) {
     strcpy(buff+strlen(buff), ", ");
-    dtostrf(temperatures[i], 1, 2, buff+strlen(buff));
+    dtostrf(temperatures[i], 0, 2, buff+strlen(buff));
   }
 
   Serial.println(buff);
