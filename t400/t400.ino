@@ -182,8 +182,13 @@ void updateData() {
   dtostrf(ambient, 1, 2, buff+strlen(buff));
     
   for(uint8_t i = 0; i < SENSOR_COUNT; i++) {
-    strcpy(buff+strlen(buff), ", ");
-    dtostrf(temperatures[i], 0, 2, buff+strlen(buff));
+
+    if(temperatures[i] == OUT_OF_RANGE) {
+    }
+    else {
+      strcpy(buff+strlen(buff), ", ");
+      dtostrf(temperatures[i], 0, 2, buff+strlen(buff));
+    }
   }
 
   Serial.println(buff);
@@ -205,6 +210,11 @@ void updateData() {
   graph[0][1] = 64 - temperatures[1] + 5;
   graph[0][2] = 64 - temperatures[2] + 5;
   graph[0][3] = 64 - temperatures[3] + 5;
+
+//  graph[0][0] = temperatures[0];
+//  graph[0][1] = temperatures[1];
+//  graph[0][2] = temperatures[2];
+//  graph[0][3] = temperatures[3];
   
   if(graphPoints < MAXIMUM_GRAPH_POINTS) {
     graphPoints++;
