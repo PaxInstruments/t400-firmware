@@ -166,18 +166,15 @@ void updateData() {
       delay(75);
     } while(!ADC1.measurementReady());
 
-    double measurement = GetTypKTemp(ADC1.getMeasurement());
+    double measuredVoltageMv = ADC1.getMeasurement();
 
-    // For testing
-    if(i == 3) {
-      measurement = OUT_OF_RANGE;
-    }
+    double temperature = GetTypKTemp(measuredVoltageMv*1000);
 
-    if(measurement == OUT_OF_RANGE) {
+    if(temperature == OUT_OF_RANGE) {
       temperatures[i] = OUT_OF_RANGE;
     }
     else {
-      temperatures[i] = GetTypKTemp(measurement)*1000 + ambient;
+      temperatures[i] = temperature + ambient;
     }
   }
   
