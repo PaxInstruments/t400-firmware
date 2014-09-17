@@ -65,17 +65,21 @@ static uint8_t temperatureChannels[SENSOR_COUNT] = {2, 3, 0, 1};
 double ambient =  0;        // Ambient temperature
 
 //// Graph data
-uint8_t graph[MAXIMUM_GRAPH_POINTS][SENSOR_COUNT]={}; // define the size of the data array
+int8_t graph[MAXIMUM_GRAPH_POINTS][SENSOR_COUNT]={}; // define the size of the data array
 uint8_t graphPoints = 0;        // Number of valid points to graph
 
-boolean backlightEnabled;
+int16_t graphMin = 0;
+int16_t graphStep = 10;
+int8_t graphScale = 1;    // Number of degrees per dot in the graph[] array.
 
+boolean backlightEnabled;
 
 unsigned long lastLogTime = 0;   // time data was logged
 #define LOG_INTERVAL_COUNT 6
 uint8_t logIntervals[LOG_INTERVAL_COUNT] = {1, 2, 5, 10, 30, 60};  // Available log intervals, in seconds
 uint8_t logInterval    = 1;       // currently selected log interval
 boolean logging = false;          // True if we are currently logging to a file
+
 
 // This function runs once. Use it for setting up the program state.
 void setup(void) {
@@ -116,6 +120,14 @@ void setup(void) {
 //  set_next_alarm();
   
   userButtons.setup();
+  
+//  for(int point = 0; point < MAXIMUM_GRAPH_POINTS; point++) {
+//    graph[point][0] = 0;
+//    graph[point][1] = 10;
+//    graph[point][2] = 20;
+//    graph[point][3] = 40;
+//  }
+//  graphPoints = MAXIMUM_GRAPH_POINTS;
   
   // Turn on the high-speed interrupt loop
   // TODO: Adjust interrupt speed.
@@ -182,8 +194,8 @@ void updateData() {
   dtostrf(ambient, 1, 2, buff+strlen(buff));
     
   for(uint8_t i = 0; i < SENSOR_COUNT; i++) {
-
     if(temperatures[i] == OUT_OF_RANGE) {
+      strcpy(buff+strlen(buff), ", -");
     }
     else {
       strcpy(buff+strlen(buff), ", ");
@@ -199,22 +211,63 @@ void updateData() {
 
   // TODO: Don't shift the data here, rotate it during display.
   // Copy the new temperature data points into the graph array
-  for(int i = sizeof(graph)/(4*sizeof(byte))-1; i>0;i--){
-    graph[i][0] = graph[i-1][0];
-    graph[i][1] = graph[i-1][1];
-    graph[i][2] = graph[i-1][2];
-    graph[i][3] = graph[i-1][3];
+  for(uint8_t pos = sizeof(graph)/(4*sizeof(byte))-1; pos>0;pos--){
+    for(uint8_t sensor = 0; sensor < SENSOR_COUNT; sensor++) {
+      graph[pos][sensor] = graph[pos-1][sensor];
+    }
+  };
+
+  for(uint8_t sensor = 0; sensor < SENSOR_COUNT; sensor++) {
+    if(temperatures[sensor] == OUT_OF_RANGE) {
+      graph[0][sensor] == GRAPH_INVALID;
+    }
+    else {
+      graph[0][sensor] = temperatures[sensor]/graphScale;
+    }
+  }
+
+  
+  // Figure out the correct graph interval
+  graphMin = 9999;
+  int16_t graphMax = -9999;
+  for(uint8_t pos = sizeof(graph)/(4*sizeof(byte))-1; pos>0; pos--){
+    for(uint8_t sensor = 0; sensor < SENSOR_COUNT; sensor++) {
+      if ((graph[pos][sensor] < graphMin) & (graph[pos][sensor] != GRAPH_INVALID)) {
+        graphMin = graph[pos][sensor];
+      }
+      if ((graph[pos][sensor] > graphMax) & (graph[pos][sensor] != GRAPH_INVALID)) {
+        graphMax = graph[pos][sensor];
+      }
+    }
   };
   
-  graph[0][0] = 64 - temperatures[0] + 5;
-  graph[0][1] = 64 - temperatures[1] + 5;
-  graph[0][2] = 64 - temperatures[2] + 5;
-  graph[0][3] = 64 - temperatures[3] + 5;
+  // TODO: Handle the case where 0 is not the bottom measurement.
+  graphMin = 0;
+  
+  int newGraphScale = 1 + (graphMax - graphMin)/50;
+  
+  graphStep = 10*newGraphScale;
 
-//  graph[0][0] = temperatures[0];
-//  graph[0][1] = temperatures[1];
-//  graph[0][2] = temperatures[2];
-//  graph[0][3] = temperatures[3];
+//  Serial.print(graphMin);
+//  Serial.print(", ");
+//  Serial.print(graphMax);
+//  Serial.print(", ");  
+//  Serial.print(graphScale);
+//  Serial.print(", ");
+//  Serial.print(newGraphScale);
+//  Serial.print(", ");
+//  Serial.println("");
+  
+  if(graphScale != newGraphScale) {
+    for(int i = sizeof(graph)/(4*sizeof(byte))-1; i>0;i--){
+      for(int j = 0; j < 4; j++) {
+        graph[i][j] = graph[i][j]*((double)graphScale/newGraphScale);
+      }
+    };
+    
+    graphScale = newGraphScale;
+  }
+  
   
   if(graphPoints < MAXIMUM_GRAPH_POINTS) {
     graphPoints++;
@@ -298,7 +351,10 @@ void loop() {
         fileName,
         graph,
         graphPoints,
-        logIntervals[logInterval]
+        logIntervals[logInterval],
+        graphScale,
+        graphMin,
+        graphStep
       );
     }
     else {
@@ -308,7 +364,10 @@ void loop() {
         "Not logging",
         graph,
         graphPoints,
-        logIntervals[logInterval]
+        logIntervals[logInterval],
+        graphScale,
+        graphMin,
+        graphStep
       );
     }
   }

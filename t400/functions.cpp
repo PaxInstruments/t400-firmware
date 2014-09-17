@@ -3,15 +3,19 @@
 #include "U8glib.h" // LCD
 #include "typek_constant.h"
 #include "t400.h"
+#include "functions.h"
 
 void draw(
   U8GLIB_LM6063& u8g,
   double* temperatures,
   double ambient,
   char* fileName,
-  uint8_t graph[100][4],
+  int8_t graph[100][4],
   uint8_t graphPoints,
-  uint8_t logInterval
+  uint8_t logInterval,
+  uint8_t graphScale,
+  int16_t graph_min,
+  int16_t graph_step
   ) {
     
   u8g.setFont(u8g_font_5x8); // Select font. See https://code.google.com/p/u8glib/wiki/fontsize
@@ -26,18 +30,27 @@ void draw(
     //// Draw temperature graph
     if (page < 6) {
       u8g.drawLine( 0, 16, 132,  16);    // hline between status bar and graph
-      u8g.drawLine(12, 64,  12,  18);    // Vertical axis
       
-#define GRAPH_INTERVALS 5
-
-      //Draw labels on vertical axis1    
-      const int16_t graph_min = 0;
-      const int16_t graph_step = 10;
+      if((graph_min < 0) | (graph_min + graph_step*5 > 99)) {
+        // 3 digit display
+        u8g.drawLine(15, 64,  15,  18);    // Vertical axis
+      }
+      else {
+        // 2 digit display
+        u8g.drawLine(12, 64,  12,  18);    // Vertical axis        
+      }
     
       // TODO: prerender these strings?
       for(uint8_t i = 0; i < GRAPH_INTERVALS; i++) {
         u8g.drawPixel(11,61 - i*10);
-        u8g.drawStr(0, 64 - i*10, dtostrf(graph_min + graph_step*i,2,0,buf));
+        if((graph_min < 0) | (graph_min + graph_step*5 > 99)) {
+          // 3 digit display
+          u8g.drawStr(0, 64 - i*10, dtostrf(graph_min + graph_step*i,3,0,buf));
+        }
+        else {
+          // 2 digit display
+          u8g.drawStr(0, 64 - i*10, dtostrf(graph_min + graph_step*i,2,0,buf));
+        }
       }
 
       // Draw labels on the right side of graph
@@ -46,14 +59,29 @@ void draw(
       };
       
       // Display data from graph[][] array to the graph on screen
-      for(uint8_t i = 0; i < graphPoints;i++){
+      
+      uint8_t lastPoint = graphPoints;
+      
+      // On a 3 digit display, don't 
+      if((graph_min < 0) | (graph_min + graph_step*5 > 99)) {
+        // 3 digit display
+        if(lastPoint > MAXIMUM_GRAPH_POINTS - 3) {
+          lastPoint = MAXIMUM_GRAPH_POINTS - 3;
+        }
+      }
+      
+      for(uint8_t i = 0; i < lastPoint;i++){
         const uint8_t  x = MAXIMUM_GRAPH_POINTS-i+12;        
-        const uint8_t* pos = graph[i];
+        const int8_t* pos = graph[i];
         
-        u8g.drawPixel(x, pos[0]); // TC1
-        u8g.drawPixel(x, pos[1]); // TC2
-        u8g.drawPixel(x, pos[2]); // TC3
-        u8g.drawPixel(x, pos[3]); // TC4
+        const uint8_t yDisplaySize = 64;
+        const uint8_t yOffset = yDisplaySize - 3;
+        
+        for(uint8_t sensor = 0; sensor < 4; sensor++) {
+          if(pos[sensor] != GRAPH_INVALID) {
+            u8g.drawPixel(x, yOffset - pos[sensor]);
+          }
+        }
       };
     }
 
