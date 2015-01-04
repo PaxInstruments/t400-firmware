@@ -10,7 +10,8 @@ You need Arduino 1.5.8 and the following Arduino libraries.
 - MCP980X temperature sensor https://github.com/PaxInstruments/MCP980X
 - DS3231 RTC https://github.com/PaxInstruments/DS3232RTC
 
-During compilation on OSX you may receive errors relating to `RobotControl()` in `ArduinoRobot.cpp`. To solve this
-1. Go into Applications>Arduino and right-click, "Show package contents"  
-2. Go to Contents>Resources>Java>libraries  
+During compilation on OSX you may receive errors relating to `RobotControl()` in `ArduinoRobot.cpp`. This seems to be a problem in Arduino 1.0.5 and later. To work around this...
+
+1. Go into Applications>Arduino and right-click, "Show package contents"
+2. Go to Contents>Resources>Java>libraries
 3. Delete the folder "Robot_Control"
