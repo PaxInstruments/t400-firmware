@@ -1,6 +1,6 @@
 #include "power.h"
 #include "t400.h"
-#include <arduino.h>
+#include <Arduino.h>
 #include "U8glib.h" // LCD
 
 void powerOn() {
