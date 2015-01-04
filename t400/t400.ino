@@ -1,28 +1,25 @@
 /*
-  t400-0.4 Firmware
- 
- Notes
- =====
- - Use 'Arduino Lilypad USB' as the Arduino type when compiling
- 
- - Including a second smaller font adds an additional 876 bytes. Use only one font.
- - Check all the variables. Reduce their size as much as possible.
- - Determine the best ballance between TC lookup table accurace and memory space. 542 bytes of flash, 106 bytes of RAM.
- - Maybe change the floats to ints and do multiplication/division at the output
- - u8glib files needed: u8g_clip.c, u8g_com_api.c, u8g_com_arduino_common.c, u8g_com_arduino_sw_spi.c,
-     u8g_delay.c, u8g_dev_st7565_lm6063.c, u8g_font_data.c, u8g_font.c, u8g_line.c, u8g_ll_api.c,
-     u8g_page.c, u8g_pb.c, u8g_pb8v1.c, u8g_rot.c, u8g_state.c, u8g.h, U8glib.cpp, U8glib.h
- - Configurable items
-   * Units: C, K, F
-   * Backlight: off, momentary on, always on
-   * Interval: 1s, 10s, etc. Whatever the RTC can mask
-   * Graph display: 1, 2, 3, 4, 1234
-   * TC subtraction
-   * Hold: continue logging, but do not update screen while hold is enabled.
-   * Min/max
- - Truncate graph data that falls beyond the graphing area
- - If value is above of below graph, the arrow points down
- - Have a setup menu and the buttons to navigate the screen or have each button dedicated to one function?
+# t400-firmware
+
+## Overview
+Firmware for the Pax Instruments T400 temperature datalogger
+
+## Setup
+1. Install the Arduino IDE from http://arduino.cc/en/Main/Software. Compiles under 1.0.6 and 1.5.8.
+2. Install the following Arduino libraries.
+  - U8Glib graphical LCD https://github.com/PaxInstruments/u8glib
+  - MCP3424 ADC https://github.com/PaxInstruments/MCP3424
+  - MCP980X temperature sensor https://github.com/PaxInstruments/MCP980X
+  - DS3231 RTC https://github.com/PaxInstruments/ds3231
+  - FAT16 SD card library https://github.com/PaxInstruments/Fat16 (use the FAT16 directory within this repository)
+3. Set the Arduino board to "LilyPad Arduino USB".
+4. After pluggin in your T400 and turning it on ensure you have selected the correct serial port
+
+During compilation on OSX you may receive errors relating to `RobotControl()` in `ArduinoRobot.cpp`. This seems to be a problem in Arduino 1.0.5 and later. To work around this...
+
+1. Go into Applications>Arduino and right-click, "Show package contents"
+2. Go to Contents>Resources>Java>libraries
+3. Delete the folder "Robot_Control"
  */
 
 // Import libraries
@@ -47,9 +44,8 @@
 char fileName[] =        "LD0000.CSV";
 
 // Graphical LCD
-// t400 v0.4 pins: SCK, MOSI, CS, A0, RST
-// open u8g_dev_st7565_lm6063.c and set width to 132. Use "u8g.setContrast(0x018*8);"
-U8GLIB_LM6063  u8g(A3, A5, A4); // Use HW-SPI
+// open u8g_dev_st7565_lm6063.c and set width to 132.
+U8GLIB_LM6063  u8g(LCD_CS, LCD_A0, LCD_RST); // Use HW-SPI
 
 
 // User buttons
