@@ -44,9 +44,7 @@ During compilation on OSX you may receive errors relating to `RobotControl()` in
 char fileName[] =        "LD0000.CSV";
 
 // Graphical LCD
-// open u8g_dev_st7565_lm6063.c and set width to 132.
-U8GLIB_LM6063  u8g(LCD_CS, LCD_A0, LCD_RST); // Use HW-SPI
-
+U8GLIB_PI13264  u8g(LCD_CS, LCD_A0, LCD_RST); // Use HW-SPI
 
 // User buttons
 Buttons        userButtons;
@@ -97,8 +95,6 @@ void setup(void) {
   
   #if DEBUG_LCD
     u8g.setContrast(0x018*8); // Set contrast level
-  #else
-    u8g.setContrast(0x018*6); // Set contrast level
   #endif
   
   u8g.setRot180(); // Rotate screen

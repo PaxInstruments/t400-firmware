@@ -13,6 +13,6 @@
 extern void powerOn();
 
 // Turn off the power to the board
-extern void powerOff(U8GLIB_LM6063& u8g);
+extern void powerOff(U8GLIB_PI13264& u8g);
 
 #endif

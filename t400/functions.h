@@ -13,7 +13,7 @@
 extern double GetTypKTemp(double microVolts);
 
 extern void draw(
-  U8GLIB_LM6063& u8g,
+  U8GLIB_PI13264& u8g,
   double* temperatures,
   double ambient,
   char* fileName,
