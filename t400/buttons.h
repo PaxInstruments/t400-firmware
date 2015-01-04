@@ -1,7 +1,7 @@
 #ifndef BUTTONS_H
 #define BUTTONS_H
 
-#include <arduino.h>
+#include <Arduino.h>
 
 // Button names
 #define BUTTON_A      0 // Start/stop logging
