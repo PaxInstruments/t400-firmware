@@ -1,4 +1,5 @@
-/* Hardware definitions for the T400 board
+/*
+ * Hardware definitions for the T400 board
  *
  *
  * Notes
@@ -29,7 +30,7 @@
 #define BUTTON_POWER_PIN    17
 #define LCD_BACKLIGHT_PIN   A0    // LCD backlight on pin
 #define LCD_CS              A1
-// DATA1                    A2
+#define DATA1               A2
 // DATA2                    A3
 #define BUTTON_D_PIN        A4
 #define BUTTON_E_PIN        A5
