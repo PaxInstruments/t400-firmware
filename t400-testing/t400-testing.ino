@@ -6,6 +6,10 @@
 #include "t400.h"  // T400 hardware definitions
 #include <Fat16.h>  // Fat16 SD card library
 #include <Fat16util.h>  // use functions to print strings from flash memory
+#include <MCP980X.h>      // For MCP9800 ( http://github.com/JChristensen/MCP980X )
+#include <Streaming.h>    // For MCP9800 ( http://arduiniana.org/libraries/streaming )
+#include <Wire.h>         // For MCP9800 ( http://arduino.cc/en/Reference/Wire )
+
 
 U8GLIB_PI13264  u8g(LCD_CS, LCD_A0, LCD_RST); // Define the LCD
 
@@ -62,8 +66,10 @@ void writeNumber(uint32_t n) {
 }
 
 char* buttonTest(void){
+  Serial.println("Button test...");
   u8g.setFont(u8g_font_6x10);
   long nextUpdate = millis() + TIMEOUT;
+  Serial.print("  Testing D... ");
   while( millis() <= nextUpdate){
     // Display question
     u8g.firstPage();  
@@ -73,11 +79,13 @@ char* buttonTest(void){
       u8g.drawStr( 0, 12, "<--");
     } while( u8g.nextPage() );
     if (digitalRead(BUTTON_D_PIN) == LOW) {
+      Serial.println("PASS");
       break;
     }
   }
   if (millis() > nextUpdate) return "FAIL";
   nextUpdate = millis() + TIMEOUT;
+  Serial.print("  Testing E... ");
   while( millis() <= nextUpdate){
     // Display question
     u8g.firstPage();  
@@ -87,11 +95,13 @@ char* buttonTest(void){
       u8g.drawStr( 0, 40, "<--");
     } while( u8g.nextPage() );
     if (digitalRead(BUTTON_E_PIN) == LOW) {
+      Serial.println("PASS");
       break;
     }
   }
   if (millis() > nextUpdate) return "FAIL";
   nextUpdate = millis() + TIMEOUT;
+  Serial.print("  Testing PWR... ");
   while( millis() <= nextUpdate){
     // Display question
     u8g.firstPage();  
@@ -101,11 +111,13 @@ char* buttonTest(void){
       u8g.drawStr( 0, 64, "<--");
     } while( u8g.nextPage() );
     if (digitalRead(BUTTON_POWER_PIN) == HIGH) {
+      Serial.println("PASS");
       break;
     }
   }
   if (millis() > nextUpdate) return "FAIL";
   nextUpdate = millis() + TIMEOUT;
+  Serial.print("  Testing A... ");
   while( millis() <= nextUpdate){
     // Display question
     u8g.firstPage();  
@@ -115,11 +127,13 @@ char* buttonTest(void){
       u8g.drawStr( 115, 12, "-->");
     } while( u8g.nextPage() );
     if (digitalRead(BUTTON_A_PIN) == LOW) {
+      Serial.println("PASS");
       break;
     }
   }
   if (millis() > nextUpdate) return "FAIL";
   nextUpdate = millis() + TIMEOUT;
+  Serial.print("  Testing B... ");
   while( millis() <= nextUpdate){
     // Display question
     u8g.firstPage();  
@@ -129,11 +143,13 @@ char* buttonTest(void){
       u8g.drawStr( 115, 40, "-->");
     } while( u8g.nextPage() );
     if (digitalRead(BUTTON_B_PIN) == LOW) {
+      Serial.println("PASS");
       break;
     }
   }
   if (millis() > nextUpdate) return "FAIL";
   nextUpdate = millis() + TIMEOUT;
+  Serial.print("  Testing C... ");
   while( millis() <= nextUpdate){
     // Display question
     u8g.firstPage();  
@@ -143,6 +159,8 @@ char* buttonTest(void){
       u8g.drawStr( 115, 64, "-->");
     } while( u8g.nextPage() );
     if (digitalRead(BUTTON_C_PIN) == LOW) {
+      Serial.println("PASS");
+      Serial.println();
       return "PASS";
     }
   }
@@ -150,35 +168,38 @@ char* buttonTest(void){
 }
 
 char* mcp9800Test(void){
-  // Prompt user to start test
-  // Display a series of images
-  // Ask for PASS or FAIL
-  
-  // Display question
-  u8g.firstPage();  
-  do {
-    u8g.setFont(u8g_font_6x10);
-    u8g.drawStr( 0, 9, "Can you see this?");
-  } while( u8g.nextPage() );
-  delay(1000);
+  Serial.println("Button test");
+  Serial.println("Button test... NONE");
+  Serial.println();
   return "NONE";
 }
 
 char* flashTest(void){
+  Serial.println("SPI flash test");
+  Serial.println("SPI flash test... NONE");
+  Serial.println();
   return "NONE";
 }
 
 char* lcdTest(void){
+  Serial.println("LCD test");
+  Serial.println("LCD test... NONE");
+  Serial.println();
   return "NONE";
 }
 
 char* rtcTest(void){
+  Serial.println("RTC test");
+  Serial.println("RTC test... NONE");
+  Serial.println();
   return "NONE";
 }
 
 char* sdTest(void){
-  if (!card.begin(SD_CS)) return "cabe";
-  if (!Fat16::init(&card)) return "fa16";
+  Serial.println("SD card test");
+  Serial.println();
+  if (!card.begin(SD_CS)) return "Err1";
+  if (!Fat16::init(&card)) return "Err2";
   
   // create a new file
   randomSeed(analogRead(DATA1));  // Generate a random number seed
@@ -192,25 +213,33 @@ char* sdTest(void){
     // O_WRITE - open for write
     if (file.open(name, O_CREAT | O_EXCL | O_WRITE)) break;
   }
-  if (!file.isOpen()) return "fiop";
+  if (!file.isOpen()) return "Err3";
   // write 100 line to file
   writeNumber(randNumber);
   file.write("\r\n"); // file.println() would work also
   // close file and force write of all data to the SD card
   file.close();
-  if (!file.open(name, O_READ)) return "nopn";
+  if (!file.open(name, O_READ)) return "Err4";
   // ****** Somewhere I need to compare what is in the file to what it should be.
   // If they are equal, PASS.
   
-  return "WORK";
+  
+  Serial.println("SD card test... NONE");
+  Serial.println();
+  return "NONE";
 }
 
 char* adcTest(void){
+  Serial.println("ADC test");
+  Serial.println("ADC test... NONE");
+  Serial.println();
   return "NONE";
 }
 
 void setup(void) {
-  // Setup the buttons as inputs
+  // Setup pin modes
+  pinMode(PWR_ONOFF_PIN, OUTPUT);
+  digitalWrite(PWR_ONOFF_PIN, HIGH);  // Enable device power
   pinMode(BUTTON_A_PIN, INPUT);
   pinMode(BUTTON_B_PIN, INPUT);
   pinMode(BUTTON_C_PIN, INPUT);
@@ -219,15 +248,43 @@ void setup(void) {
   pinMode(BUTTON_POWER_PIN, INPUT);
   // ****** It looks like the pullup resistor is enabled. This is the RXLED ******
   
-  pinMode(PWR_ONOFF_PIN, OUTPUT);
-  digitalWrite(PWR_ONOFF_PIN, HIGH);  // Enable device power
-  
   // Display a splash screen
   u8g.setRot180();  // rotate screen
   u8g.firstPage();  
   do {
     u8g.setFont(u8g_font_6x10);
     u8g.drawStr( 0, 9, "    T400 v" pcbVersion " test    ");
+  } while( u8g.nextPage() );
+  delay(1000);
+  
+  Serial.begin(9600);
+  delay(2000);
+  Serial.println();
+  Serial.println("    T400 v" pcbVersion " test    ");
+  Serial.println("    ===============    ");
+  Serial.print("Begin in");
+  Serial.print(" 3");
+  u8g.firstPage();  
+  do {
+    u8g.setFont(u8g_font_6x10);
+    u8g.drawStr( 0, 9, "    T400 v" pcbVersion " test    ");
+    u8g.drawStr( 0, 20, "    Begin in 3");
+  } while( u8g.nextPage() );
+  delay(1000);
+  Serial.print(" 2");
+  u8g.firstPage();  
+  do {
+    u8g.setFont(u8g_font_6x10);
+    u8g.drawStr( 0, 9, "    T400 v" pcbVersion " test    ");
+    u8g.drawStr( 0, 20, "    Begin in 2");
+  } while( u8g.nextPage() );
+  delay(1000);
+  Serial.println(" 1");
+  u8g.firstPage();  
+  do {
+    u8g.setFont(u8g_font_6x10);
+    u8g.drawStr( 0, 9, "    T400 v" pcbVersion " test    ");
+    u8g.drawStr( 0, 20, "    Begin in 1");
   } while( u8g.nextPage() );
   delay(1000);
   
