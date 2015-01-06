@@ -9,8 +9,6 @@
 
 U8GLIB_PI13264  u8g(LCD_CS, LCD_A0, LCD_RST); // Define the LCD
 
-#define TIMEOUT 6000  // Define the test timeout interval
-
 SdCard card;
 Fat16 file;
 #define error(s) error_P(PSTR(s))  // store error strings in flash to save RAM
