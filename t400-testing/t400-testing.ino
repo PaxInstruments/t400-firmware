@@ -260,18 +260,20 @@ char* sdTest(void){
       u8g.drawStr( 25, 35, "Testing SD...");
     } while( u8g.nextPage() );
   Serial.print("SD card... ");
+  DEBUG_PRINTLN();
   if (!card.begin(SD_CS)){
     Serial.println("FAIL... if (!card.begin(SD_CS))");
     return "FAIL";
   }
   if (!Fat16::init(&card)){
-    Serial.println("FAIL... if (!Fat16::init(&card))");
+    Serial.println("FAIL... if (!Fat16::init(&card))");  // Fails here when there is no SD card
     return "FAIL";
   }
   
   // create a new file
   randomSeed(analogRead(DATA1));  // Generate a random number seed
-  int randNumber = random(1001, 9999);  // Choose a random number
+//  long randNumber = random(1001, 9999);  // Choose a random number
+  long randNumber = 1999;
   char name[] = "WRITE00.TXT";
   for (uint8_t i = 0; i < 100; i++) {  // Incriment a new filename if one already exists.
     name[5] = i/10 + '0';
@@ -279,45 +281,57 @@ char* sdTest(void){
     // O_CREAT - create the file if it does not exist
     // O_EXCL - fail if the file exists
     // O_WRITE - open for write
-    if (file.open(name, O_CREAT | O_EXCL | O_WRITE)) {
-      Serial.println("FAIL... if (file.open(name, O_CREAT | O_EXCL | O_WRITE))");
-      return "FAIL";
-    }
+    if (file.open(name, O_CREAT | O_EXCL | O_WRITE)) break;
   }
-  if (!file.isOpen()){
-    Serial.println("FAIL... if (!file.isOpen())");
-    return "FAIL";
-  }
+
+  DEBUG_PRINT("    File name: ");DEBUG_PRINTLN(name);
+  if (!file.isOpen()) error ("file.open");
+    
   writeNumber(randNumber);  // write ranNumber to file
-//  file.write("\r\n"); // file.println() would work also
-  // close file and force write of all data to the SD card
-  file.close();
-  if (!file.open(name, O_READ)){
-    Serial.println("FAIL... if (!file.open(name, O_READ))");
+//  file.println();
+  file.close();  // close file and force write of all data to the SD card
+  
+  // Start reading
+  if (!card.begin(SD_CS)){
+    Serial.println("FAIL... if (!card.begin(SD_CS))");
     return "FAIL";
   }
+  if (!Fat16::init(&card)){
+    Serial.println("FAIL... if (!Fat16::init(&card))");  // Fails here when there is no SD card
+    return "FAIL";
+  }
+  
+  // open a file
+  if (file.open(name, O_READ)) {
+  } else{
+    Serial.print("    FAIL... could not open ");Serial.println(name);
+    return "FAIL";
+  }
+  
   // ****** Somewhere I need to compare what is in the file to what it should be.
   // If they are equal, PASS.
   int16_t c;
-  char b[4];
-  char d[4];
+//  char b[4];
+  char* readNum = "0000";
+  char* randNum = "0000";
   String str;
   str = String(randNumber);
-  str.toCharArray(b,5);
-  int i = 0;
+  str.toCharArray(randNum,5);
+  int charInt = 0;
   while ((c = file.read()) > 0){
-    //DEBUG_PRINT(i);DEBUG_PRINT(" ");DEBUG_PRINTLN((char)c);
-    d[i] = char(c);
-    i++;
+    readNum[charInt] = char(c);
+    charInt++;
   }
-  //DEBUG_PRINT("sizeof(b) = ");DEBUG_PRINTLN(sizeof(b));
-  //DEBUG_PRINT("sizeof(d) = ");DEBUG_PRINTLN(sizeof(d));
-  DEBUG_PRINT("rand array = ");DEBUG_PRINTLN(b);
-  DEBUG_PRINT("read array = ");DEBUG_PRINTLN(d);
-  if ( strcmp (b,d)){
+  DEBUG_PRINT("    Random number: ");DEBUG_PRINTLN(randNumber);
+  DEBUG_PRINT("    Write number: ");DEBUG_PRINTLN(randNum);
+  DEBUG_PRINT("    Read number: ");DEBUG_PRINTLN(readNum);
+  file.close();
+  if ( readNum == randNum){
+    DEBUG_PRINT("SD card...");
     Serial.println("PASS");
     return "PASS";
   }else{
+    DEBUG_PRINT("SD card...");
     Serial.println("FAIL");
     return "FAIL";
   }
@@ -471,8 +485,8 @@ void setup(void) {
 void loop(void) {
   // Run all the tests.
   // This should probably be moved to the loop() function.
-//  buttonStatus = buttonTest();  // Do button test. Requires onscreen instructions.
-//  backlightStatus = backlightTest();  // Do backlight test
+  buttonStatus = buttonTest();  // Do button test. Requires onscreen instructions.
+  backlightStatus = backlightTest();  // Do backlight test
   lcdStatus = lcdTest();  // Do LCD test
   flashStatus = flashTest();  // Do SPI flash test
   rtcStatus = rtcTest();  // Do RTC test
