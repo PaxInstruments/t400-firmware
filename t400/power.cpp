@@ -1,6 +1,6 @@
 #include "power.h"
 #include "t400.h"
-#include <arduino.h>
+#include <Arduino.h>
 #include "U8glib.h" // LCD
 
 void powerOn() {
@@ -9,7 +9,7 @@ void powerOn() {
   digitalWrite(PWR_ONOFF_PIN, HIGH);
 }
 
-void powerOff(U8GLIB_LM6063& u8g) {
+void powerOff(U8GLIB_PI13264& u8g) {
   digitalWrite(PWR_ONOFF_PIN, LOW);
   
   u8g.firstPage();  

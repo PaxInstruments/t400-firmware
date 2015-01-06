@@ -3,19 +3,26 @@
 
 #include "t400.h"
 
+// Number of intervals in the graph
+#define GRAPH_INTERVALS 5
+
+
 // Lookup table for converting K-type thermocouple measurements into 
 // @param microVolt reading from the ADC
 // @return Temperature, in ???
-extern float GetTypKTemp(float microVolts);
+extern double GetTypKTemp(double microVolts);
 
 extern void draw(
-  U8GLIB_LM6063& u8g,
-  float* temperatures,
-  float ambient,
+  U8GLIB_PI13264& u8g,
+  double* temperatures,
+  double ambient,
   char* fileName,
-  byte graph[100][4],
-  int length,
-  uint8_t logInterval
+  int8_t graph[100][4],
+  uint8_t graphPoints,
+  uint8_t logInterval,
+  uint8_t graphScale,
+  int16_t graph_min,
+  int16_t graph_step
   );
   
   
