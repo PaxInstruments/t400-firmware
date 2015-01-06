@@ -3,7 +3,7 @@
  */
 
 #include "U8glib.h"  // Graphics library
-#include "t400-testing.h"  // T400 hardware definitions
+#include "t400.h"  // T400 hardware definitions
 #include <Fat16.h>  // Fat16 SD card library
 #include <Fat16util.h>  // use functions to print strings from flash memory
 
