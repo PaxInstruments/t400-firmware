@@ -47,7 +47,7 @@
 #define BUTTON_E_PIN        A5
 
 
-#define DEBUG            0 // Debugging code: 0 disable, 1 enable
+#define DEBUG            1 // Debugging code: 0 disable, 1 enable
 #define DEBUG_LCD        0 // Debugging code: 0 disable, 1 enable
 
 
