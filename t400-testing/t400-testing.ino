@@ -66,16 +66,21 @@ void writeNumber(uint32_t n) {
 }
 
 char* buttonTest(void){
-  Serial.println("Button test...");
+/* 
+ * ToDo
+ * - PASS only on button state change.
+ * - Use button system from production firmware.
+ * - Bug: SW_PWR is not detected. Always PASS.
+ */
   u8g.setFont(u8g_font_6x10);
   long nextUpdate = millis() + TIMEOUT;
-  Serial.print("  Testing D... ");
+  Serial.print("Testing D... ");
   while( millis() <= nextUpdate){
     // Display question
     u8g.firstPage();  
     do {
       u8g.drawStr( 0, 9, "    T400 v" pcbVersion " test    ");
-      u8g.drawStr( 25, 35, "Testing D...");
+      u8g.drawStr( 25, 35, "Button D...");
       u8g.drawStr( 0, 12, "<--");
     } while( u8g.nextPage() );
     if (digitalRead(BUTTON_D_PIN) == LOW) {
@@ -85,13 +90,13 @@ char* buttonTest(void){
   }
   if (millis() > nextUpdate) return "FAIL";
   nextUpdate = millis() + TIMEOUT;
-  Serial.print("  Testing E... ");
+  Serial.print("Button E... ");
   while( millis() <= nextUpdate){
     // Display question
     u8g.firstPage();  
     do {
       u8g.drawStr( 0, 9, "    T400 v" pcbVersion " test    ");
-      u8g.drawStr( 25, 35, "Testing E...");
+      u8g.drawStr( 25, 35, "Button E...");
       u8g.drawStr( 0, 40, "<--");
     } while( u8g.nextPage() );
     if (digitalRead(BUTTON_E_PIN) == LOW) {
@@ -101,13 +106,13 @@ char* buttonTest(void){
   }
   if (millis() > nextUpdate) return "FAIL";
   nextUpdate = millis() + TIMEOUT;
-  Serial.print("  Testing PWR... ");
+  Serial.print("Button PWR... ");
   while( millis() <= nextUpdate){
     // Display question
     u8g.firstPage();  
     do {
       u8g.drawStr( 0, 9, "    T400 v" pcbVersion " test    ");
-      u8g.drawStr( 25, 35, "Testing PWR...");
+      u8g.drawStr( 25, 35, "Button PWR...");
       u8g.drawStr( 0, 64, "<--");
     } while( u8g.nextPage() );
     if (digitalRead(BUTTON_POWER_PIN) == HIGH) {
@@ -117,7 +122,7 @@ char* buttonTest(void){
   }
   if (millis() > nextUpdate) return "FAIL";
   nextUpdate = millis() + TIMEOUT;
-  Serial.print("  Testing A... ");
+  Serial.print("Button A... ");
   while( millis() <= nextUpdate){
     // Display question
     u8g.firstPage();  
@@ -133,7 +138,7 @@ char* buttonTest(void){
   }
   if (millis() > nextUpdate) return "FAIL";
   nextUpdate = millis() + TIMEOUT;
-  Serial.print("  Testing B... ");
+  Serial.print("Button B... ");
   while( millis() <= nextUpdate){
     // Display question
     u8g.firstPage();  
@@ -149,7 +154,7 @@ char* buttonTest(void){
   }
   if (millis() > nextUpdate) return "FAIL";
   nextUpdate = millis() + TIMEOUT;
-  Serial.print("  Testing C... ");
+  Serial.print("Button C... ");
   while( millis() <= nextUpdate){
     // Display question
     u8g.firstPage();  
@@ -160,7 +165,6 @@ char* buttonTest(void){
     } while( u8g.nextPage() );
     if (digitalRead(BUTTON_C_PIN) == LOW) {
       Serial.println("PASS");
-      Serial.println();
       return "PASS";
     }
   }
@@ -168,42 +172,75 @@ char* buttonTest(void){
 }
 
 char* mcp9800Test(void){
-  Serial.println("Button test");
-  Serial.println("Button test... NONE");
-  Serial.println();
+/* 
+ * MCP9800 test
+ * 1. Attempt to read temperature
+ * 2. If data is good, PASS, else, FAIL
+ *
+ * ToDo
+ * - Determine what errors can be returned
+ * - Determine the difference between good data and bad data
+ */
+  Serial.println("JTemp... NONE");
   return "NONE";
 }
 
 char* flashTest(void){
-  Serial.println("SPI flash test");
-  Serial.println("SPI flash test... NONE");
-  Serial.println();
+/* 
+ * Flash test
+ * 1. Write known data to flash
+ * 2. Read data from flash
+ * 3. Compare read data with known data
+ * 4. If same, PASS, else, FAIL
+ */
+  Serial.println("Flash... NONE");
   return "NONE";
 }
 
 char* lcdTest(void){
-  Serial.println("LCD test");
-  Serial.println("LCD test... NONE");
-  Serial.println();
+/* 
+ * ToDo
+ * 
+ */
+  Serial.println("LCD... NONE");
   return "NONE";
 }
 
 char* rtcTest(void){
-  Serial.println("RTC test");
-  Serial.println("RTC test... NONE");
-  Serial.println();
+/* 
+ * ToDo
+ * 
+ */
+  Serial.println("RTC... NONE");
   return "NONE";
 }
 
 char* sdTest(void){
-  Serial.println("SD card test");
-  Serial.println();
-  if (!card.begin(SD_CS)) return "Err1";
-  if (!Fat16::init(&card)) return "Err2";
+/* 
+ * SD card test
+ * 1. Write known data to flash
+ * 2. Read data from flash
+ * 3. Compare read data with known data
+ * 4. If same, PASS, else, FAIL
+ *
+ * ToDo
+ * - Determine if we should compare data as strings, chars, or numbers
+ * - Read data from file
+ * - Compare to known data
+ */
+  Serial.print("SD card... ");
+  if (!card.begin(SD_CS)){
+    Serial.println("FAIL");
+    return "FAIL";
+  }
+  if (!Fat16::init(&card)){
+    Serial.println("FAIL");
+    return "FAIL";
+  }
   
   // create a new file
   randomSeed(analogRead(DATA1));  // Generate a random number seed
-  int randNumber = random(1000, 9999);  // Choose a random number
+  int randNumber = random(1001, 9999);  // Choose a random number
   char name[] = "WRITE00.TXT";
   for (uint8_t i = 0; i < 100; i++) {  // Incriment a new filename if one already exists.
     name[5] = i/10 + '0';
@@ -213,26 +250,59 @@ char* sdTest(void){
     // O_WRITE - open for write
     if (file.open(name, O_CREAT | O_EXCL | O_WRITE)) break;
   }
-  if (!file.isOpen()) return "Err3";
-  // write 100 line to file
-  writeNumber(randNumber);
-  file.write("\r\n"); // file.println() would work also
+  if (!file.isOpen()){
+    Serial.println("FAIL");
+    return "FAIL";
+  }
+//  Serial.print("  Writing ");Serial.println(randNumber);
+  writeNumber(randNumber);  // write ranNumber to file
+//  file.write("\r\n"); // file.println() would work also
   // close file and force write of all data to the SD card
   file.close();
-  if (!file.open(name, O_READ)) return "Err4";
+  if (!file.open(name, O_READ)){
+    Serial.println("FAIL");
+    return "FAIL";
+  }
   // ****** Somewhere I need to compare what is in the file to what it should be.
   // If they are equal, PASS.
+  int16_t c;
+  char b[4];
+  char d[4];
+  String str;
+  str = String(randNumber);
+  str.toCharArray(b,5);
+//  Serial.print("rand array = ");Serial.println(b);
+  int i = 0;
+  while ((c = file.read()) > 0){
+//    Serial.print(i);Serial.print(" ");Serial.println((char)c);
+    d[i] = char(c);
+    i++;
+  }
+//  Serial.print("b = ");Serial.println(sizeof(b));
+//  Serial.print("d = ");Serial.println(sizeof(d));
   
-  
-  Serial.println("SD card test... NONE");
-  Serial.println();
-  return "NONE";
+//  Serial.print("read array = ");Serial.println(d);
+  if ( strcmp (b,d)){
+    Serial.println("PASS");
+    return "PASS";
+  }else{
+    Serial.println("FAIL");
+    return "FAIL";
+  }
 }
 
 char* adcTest(void){
-  Serial.println("ADC test");
-  Serial.println("ADC test... NONE");
-  Serial.println();
+/* 
+ * ADC test
+ * 1. Attempt to read each voltage
+ * 2. If data is good, PASS, else, FAIL
+ *
+ * ToDo
+ * - Determine what errors can be returned
+ * - Determine the difference between good data and bad data
+ * - Note: Without TCs present we should read a full scale reading
+ */
+  Serial.println("ADC... NONE");
   return "NONE";
 }
 
@@ -261,7 +331,7 @@ void setup(void) {
   delay(2000);
   Serial.println();
   Serial.println("    T400 v" pcbVersion " test    ");
-  Serial.println("    ===============    ");
+  Serial.println("    ==============    ");
   Serial.print("Begin in");
   Serial.print(" 3");
   u8g.firstPage();  
