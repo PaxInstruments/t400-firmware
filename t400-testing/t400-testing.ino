@@ -74,7 +74,7 @@ char* buttonTest(void){
  */
   u8g.setFont(u8g_font_6x10);
   long nextUpdate = millis() + TIMEOUT;
-  Serial.print("Testing D... ");
+  Serial.print("Button D... ");
   while( millis() <= nextUpdate){
     // Display question
     u8g.firstPage();  
@@ -128,7 +128,7 @@ char* buttonTest(void){
     u8g.firstPage();  
     do {
       u8g.drawStr( 0, 9, "    T400 v" pcbVersion " test    ");
-      u8g.drawStr( 25, 35, "Testing A...");
+      u8g.drawStr( 25, 35, "Button A...");
       u8g.drawStr( 115, 12, "-->");
     } while( u8g.nextPage() );
     if (digitalRead(BUTTON_A_PIN) == LOW) {
@@ -144,7 +144,7 @@ char* buttonTest(void){
     u8g.firstPage();  
     do {
       u8g.drawStr( 0, 9, "    T400 v" pcbVersion " test    ");
-      u8g.drawStr( 25, 35, "Testing B...");
+      u8g.drawStr( 25, 35, "Button B...");
       u8g.drawStr( 115, 40, "-->");
     } while( u8g.nextPage() );
     if (digitalRead(BUTTON_B_PIN) == LOW) {
@@ -160,7 +160,7 @@ char* buttonTest(void){
     u8g.firstPage();  
     do {
       u8g.drawStr( 0, 9, "    T400 v" pcbVersion " test    ");
-      u8g.drawStr( 25, 35, "Testing C...");
+      u8g.drawStr( 25, 35, "Button C...");
       u8g.drawStr( 115, 64, "-->");
     } while( u8g.nextPage() );
     if (digitalRead(BUTTON_C_PIN) == LOW) {
@@ -181,6 +181,11 @@ char* mcp9800Test(void){
  * - Determine what errors can be returned
  * - Determine the difference between good data and bad data
  */
+ u8g.firstPage();  
+    do {
+      u8g.drawStr( 0, 9, "    T400 v" pcbVersion " test    ");
+      u8g.drawStr( 25, 35, "Testing JTemp...");
+    } while( u8g.nextPage() );
   Serial.println("JTemp... NONE");
   return "NONE";
 }
@@ -193,6 +198,11 @@ char* flashTest(void){
  * 3. Compare read data with known data
  * 4. If same, PASS, else, FAIL
  */
+ u8g.firstPage();  
+    do {
+      u8g.drawStr( 0, 9, "    T400 v" pcbVersion " test    ");
+      u8g.drawStr( 25, 35, "Testing flash...");
+    } while( u8g.nextPage() );
   Serial.println("Flash... NONE");
   return "NONE";
 }
@@ -202,6 +212,11 @@ char* lcdTest(void){
  * ToDo
  * 
  */
+ u8g.firstPage();  
+    do {
+      u8g.drawStr( 0, 9, "    T400 v" pcbVersion " test    ");
+      u8g.drawStr( 25, 35, "Testing LCD...");
+    } while( u8g.nextPage() );
   Serial.println("LCD... NONE");
   return "NONE";
 }
@@ -211,6 +226,11 @@ char* rtcTest(void){
  * ToDo
  * 
  */
+ u8g.firstPage();  
+    do {
+      u8g.drawStr( 0, 9, "    T400 v" pcbVersion " test    ");
+      u8g.drawStr( 25, 35, "Testing RTC...");
+    } while( u8g.nextPage() );
   Serial.println("RTC... NONE");
   return "NONE";
 }
@@ -228,6 +248,11 @@ char* sdTest(void){
  * - Read data from file
  * - Compare to known data
  */
+ u8g.firstPage();  
+    do {
+      u8g.drawStr( 0, 9, "    T400 v" pcbVersion " test    ");
+      u8g.drawStr( 25, 35, "Testing SD...");
+    } while( u8g.nextPage() );
   Serial.print("SD card... ");
   if (!card.begin(SD_CS)){
     Serial.println("FAIL");
@@ -302,6 +327,11 @@ char* adcTest(void){
  * - Determine the difference between good data and bad data
  * - Note: Without TCs present we should read a full scale reading
  */
+ u8g.firstPage();  
+    do {
+      u8g.drawStr( 0, 9, "    T400 v" pcbVersion " test    ");
+      u8g.drawStr( 25, 35, "Testing ADC...");
+    } while( u8g.nextPage() );
   Serial.println("ADC... NONE");
   return "NONE";
 }
@@ -362,11 +392,17 @@ void setup(void) {
   // This should probably be moved to the loop() function.
   buttonStatus = buttonTest();  // Do button test. Requires onscreen instructions.
   flashStatus = flashTest();  // Do SPI flash test
+  delay(2000);
   lcdStatus = lcdTest();  // Do LCD test
+  delay(2000);
   rtcStatus = rtcTest();  // Do RTC test
+  delay(2000);
   sdStatus = sdTest();  // Do SD card test
+  delay(2000);
   adcStatus = adcTest();  // Do ADC test
+  delay(2000);
   mcp9800Status = mcp9800Test();  // Do ADC test
+  delay(2000);
 }
 
 void loop(void) {
