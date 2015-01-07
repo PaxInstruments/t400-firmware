@@ -262,11 +262,11 @@ char* sdTest(void){
   Serial.print("SD card... ");
   DEBUG_PRINTLN();
   if (!card.begin(SD_CS)){
-    Serial.println("FAIL... if (!card.begin(SD_CS))");
+    Serial.println("FAIL... no SD card found");
     return "FAIL";
   }
   if (!Fat16::init(&card)){
-    Serial.println("FAIL... if (!Fat16::init(&card))");  // Fails here when there is no SD card
+    Serial.println("FAIL... not a FAT16 filesystem");  // Fails here when there is no SD card
     return "FAIL";
   }
   
@@ -293,11 +293,11 @@ char* sdTest(void){
   
   // Start reading
   if (!card.begin(SD_CS)){
-    Serial.println("FAIL... if (!card.begin(SD_CS))");
+    Serial.println("FAIL... no SD card found");
     return "FAIL";
   }
   if (!Fat16::init(&card)){
-    Serial.println("FAIL... if (!Fat16::init(&card))");  // Fails here when there is no SD card
+    Serial.println("FAIL...  not a FAT16 filesystem");  // Fails here when there is no SD card
     return "FAIL";
   }
   
