@@ -15,7 +15,7 @@
 #define MAXIMUM_GRAPH_POINTS    100
 
 // Set timeout for t400-testing
-#define TIMEOUT 6000  // Define the test timeout interval
+#define TIMEOUT 3000  // Define the test timeout interval
 
 /// I2C addresses
 #define MCP3424_ADDR    0x69

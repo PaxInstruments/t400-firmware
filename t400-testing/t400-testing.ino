@@ -14,8 +14,6 @@
 
 U8GLIB_PI13264  u8g(LCD_CS, LCD_A0, LCD_RST); // Define the LCD
 
-SPIFlash flash(FLASH_CS, 0xEF40);  // SPI flash chip
-
 SdCard card;
 Fat16 file;
 #define error(s) error_P(PSTR(s))  // store error strings in flash to save RAM
@@ -238,6 +236,7 @@ char* flashTest(void){
 // 3. Compare read data with known data
 // 4. If same, PASS, else, FAIL
 
+  SPIFlash flash(FLASH_CS, 0xEF40);  // SPI flash chip
   
   u8g.setFont(u8g_font_6x10);
   Serial.print("Flash... ");
@@ -250,13 +249,18 @@ char* flashTest(void){
   Serial.println("debugging");
   Serial.print("  DEBUG: nextUpdate = ");Serial.println(nextUpdate);
   Serial.print("  DEBUG: AVR = ");Serial.println(AVR);
-  Serial.print("  DEBUG: flash.initialize() = ");Serial.println(flash.initialize());
+  Serial.print("  DEBUG: SPI.transfer(0) = ");Serial.println(SPI.transfer(0));
+  Serial.print("  DEBUG: (SPI.transfer(0)+1) & 1 = ");Serial.println((SPI.transfer(0)+1) & 1);
+//  Serial.print("  DEBUG: flash.initialize() = ");Serial.println(flash.initialize());
   while( millis() <= nextUpdate){
     Serial.print("  DEBUG: millis() = ");Serial.println(millis());
-    if (true) {
+    if (flash.initialize()) {
     //if (flash.initialize()) {           // *** The initialize function does not return anything when
       Serial.println("PASS");              // *** the flash fails to start. Without the chip, this
       return "PASS";                       // *** function just hangs. Must modify the library.
+    } else {
+      Serial.println("  DEBUG: Flash init failed");
+      
     }
   }
   Serial.print("  DEBUG: millis() = ");Serial.print(millis());Serial.print("  while loop ended");
