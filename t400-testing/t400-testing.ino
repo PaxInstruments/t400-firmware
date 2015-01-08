@@ -9,9 +9,12 @@
 #include <MCP980X.h>      // For MCP9800 ( http://github.com/JChristensen/MCP980X )
 #include <Streaming.h>    // For MCP9800 ( http://arduiniana.org/libraries/streaming )
 #include <Wire.h>         // For MCP9800 ( http://arduino.cc/en/Reference/Wire )
-
+#include <SPIFlash.h>    //get it here: https://github.com/LowPowerLab/SPIFlash
+#include <SPI.h>
 
 U8GLIB_PI13264  u8g(LCD_CS, LCD_A0, LCD_RST); // Define the LCD
+
+SPIFlash flash(FLASH_CS, 0xEF40);  // SPI flash chip
 
 SdCard card;
 Fat16 file;
@@ -196,6 +199,10 @@ char* mcp9800Test(void){
 char* flashTest(void){
 /* 
  * Flash test
+ * 1. Initialize the flash chip
+ * 2. If initialization is okay, PASS, else, FAIL.
+ * 
+ * Old flash test (not doign this one)
  * 1. Write known data to flash
  * 2. Read data from flash
  * 3. Compare read data with known data
@@ -207,8 +214,15 @@ char* flashTest(void){
       u8g.drawStr( 0, 9, "    T400 v" pcbVersion " test    ");
       u8g.drawStr( 25, 35, "Testing flash...");
     } while( u8g.nextPage() );
-  Serial.println("Flash... NONE");
-  return "NONE";
+  Serial.print("Flash... ");
+  
+  if (flash.initialize()) {
+    DEBUG_PRINTLN("Init OK!");
+    return "PASS";
+  } else {
+    Serial.println("FAIL... cannot initialize flash");
+    return "FAIL";
+  }
 }
 
 char* lcdTest(void){
@@ -445,10 +459,9 @@ void setup(void) {
     u8g.setFont(u8g_font_6x10);
     u8g.drawStr( 0, 9, "    T400 v" pcbVersion " test    ");
   } while( u8g.nextPage() );
-  delay(1000);
+  delay(500);
   
   Serial.begin(9600);
-  delay(2000);
   Serial.println();
   Serial.println("    T400 v" pcbVersion " test    ");
   Serial.println("    ==============    ");

@@ -32,7 +32,7 @@
 #define BATTERY_VBAT_PIN     8    // Battery voltage pin (analog input)
 // VBAT_SENSE                9
 #define BATTERY_STATUS_PIN  10    // Battery status pin
-// FLASH_CS                 11
+#define FLASH_CS            11
 #define LCD_A0              12
 #define BUTTON_C_PIN        13
 // MISO                     14
