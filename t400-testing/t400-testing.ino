@@ -33,15 +33,14 @@ char* mcp9800Status = "    ";
 void draw(void) {
   // graphic commands to redraw the complete screen should be placed here
   u8g.setFont(u8g_font_6x10);
-  u8g.drawStr( 0, 9, "    T400 v" pcbVersion " test    ");
+  u8g.drawStr( 0, 9, "T400 v" pcbVersion "    start -->");
   u8g.setFont(u8g_font_5x8);
   u8g.drawStr( 0, 18, "Buttons: ");u8g.drawStr( 45, 18, buttonStatus);u8g.drawStr( 75, 18, "LCD: ");u8g.drawStr( 100, 18, lcdStatus);
   u8g.drawStr( 0, 26, "  Flash: ");u8g.drawStr( 45, 26, flashStatus);u8g.drawStr( 75, 26, "RTC: ");u8g.drawStr( 100, 26, rtcStatus);
   u8g.drawStr( 0, 34, "MCP9800: ");u8g.drawStr( 45, 34, mcp9800Status);u8g.drawStr( 75, 34, "ADC: ");u8g.drawStr( 100, 34, adcStatus);
   u8g.drawStr( 0, 42, "Backlit: ");u8g.drawStr( 45, 42, backlightStatus);u8g.drawStr( 75, 42, " SD: ");u8g.drawStr( 100, 42, sdStatus);
-  u8g.drawStr( 0, 50, "         ");u8g.drawStr( 45, 50, "    ");u8g.drawStr( 75, 50, "     ");u8g.drawStr( 100, 50, "    ");
-  u8g.drawStr( 0, 58, "         ");u8g.drawStr( 45, 58, "    ");u8g.drawStr( 75, 58, "     ");u8g.drawStr( 100, 58, "    ");
-  u8g.drawStr( 90, 64, "Test -->");
+  u8g.drawStr( 0, 50, "empty    ");u8g.drawStr( 45, 50, "    ");u8g.drawStr( 75, 50, "     ");u8g.drawStr( 100, 50, "    ");
+  u8g.drawStr( 0, 58, "empty    ");u8g.drawStr( 45, 58, "    ");u8g.drawStr( 75, 58, "     ");u8g.drawStr( 100, 58, "    ");
 }
 
 // Set up the SD error stuff
@@ -93,7 +92,10 @@ char* buttonTest(void){
       break;
     }
   }
-  if (millis() > nextUpdate) return "FAIL";
+  if (millis() > nextUpdate){
+    Serial.println("FAIL... D");
+    return "FAIL";
+  }
   nextUpdate = millis() + TIMEOUT;
   Serial.print("Button E... ");
   while( millis() <= nextUpdate){
@@ -109,7 +111,10 @@ char* buttonTest(void){
       break;
     }
   }
-  if (millis() > nextUpdate) return "FAIL";
+  if (millis() > nextUpdate){
+    Serial.println("FAIL... E");
+    return "FAIL";
+  }
   nextUpdate = millis() + TIMEOUT;
   Serial.print("Button PWR... ");
   while( millis() <= nextUpdate){
@@ -125,7 +130,10 @@ char* buttonTest(void){
       break;
     }
   }
-  if (millis() > nextUpdate) return "FAIL";
+  if (millis() > nextUpdate){
+    Serial.println("FAIL");
+    return "FAIL";
+  }
   nextUpdate = millis() + TIMEOUT;
   Serial.print("Button A... ");
   while( millis() <= nextUpdate){
@@ -141,7 +149,10 @@ char* buttonTest(void){
       break;
     }
   }
-  if (millis() > nextUpdate) return "FAIL";
+  if (millis() > nextUpdate){
+    Serial.println("FAIL... A");
+    return "FAIL";
+  }
   nextUpdate = millis() + TIMEOUT;
   Serial.print("Button B... ");
   while( millis() <= nextUpdate){
@@ -157,7 +168,10 @@ char* buttonTest(void){
       break;
     }
   }
-  if (millis() > nextUpdate) return "FAIL";
+  if (millis() > nextUpdate){
+    Serial.println("FAIL... B");
+    return "FAIL";
+  }
   nextUpdate = millis() + TIMEOUT;
   Serial.print("Button C... ");
   while( millis() <= nextUpdate){
@@ -173,7 +187,10 @@ char* buttonTest(void){
       return "PASS";
     }
   }
-  return "FAIL";
+  if (millis() > nextUpdate){
+    Serial.println("FAIL... C");
+    return "FAIL";
+  }
 }
 
 char* mcp9800Test(void){
@@ -385,14 +402,10 @@ char* backlightTest(void){
  u8g.firstPage();  
     do {
       u8g.drawStr( 0, 9, "    T400 v" pcbVersion " test    ");
-      u8g.drawStr( 25, 35, "Testing Backlight...");
+      u8g.drawStr( 25, 35, "Backlight...");
     } while( u8g.nextPage() );
  Serial.print("Backlight... ");
  int delayTime = 100;
- digitalWrite(LCD_BACKLIGHT_PIN, HIGH);
- delay(delayTime);
- digitalWrite(LCD_BACKLIGHT_PIN, LOW);
- delay(delayTime);
  digitalWrite(LCD_BACKLIGHT_PIN, HIGH);
  delay(delayTime);
  digitalWrite(LCD_BACKLIGHT_PIN, LOW);
@@ -419,11 +432,11 @@ char* backlightTest(void){
     do {
       u8g.drawStr( 0, 9, "    T400 v" pcbVersion " test    ");
       u8g.drawStr( 25, 35, "Backlight blink?");
-      u8g.drawStr( 85, 64, "PASS -->");
+      u8g.drawStr( 85, 45, "PASS -->");
 //      u8g.drawStr( 0, 64, "<-- FAIL");
       u8g.drawStr( 0, 45, "<-- FAIL");
     } while( u8g.nextPage() );
-    if (digitalRead(BUTTON_C_PIN) == LOW) {
+    if (digitalRead(BUTTON_B_PIN) == LOW) {
       Serial.println("PASS");
       digitalWrite(LCD_BACKLIGHT_PIN, LOW);
       return "PASS";
@@ -452,50 +465,30 @@ void setup(void) {
   pinMode(BUTTON_POWER_PIN, INPUT);
   // ****** It looks like the pullup resistor is enabled. This is the RXLED ******
   
-  // Display a splash screen
   u8g.setRot180();  // rotate screen
-  u8g.firstPage();  
-  do {
-    u8g.setFont(u8g_font_6x10);
-    u8g.drawStr( 0, 9, "    T400 v" pcbVersion " test    ");
-  } while( u8g.nextPage() );
-  delay(500);
   
   Serial.begin(9600);
-  Serial.println();
-  Serial.println("    T400 v" pcbVersion " test    ");
-  Serial.println("    ==============    ");
-  Serial.print("Begin in");
-  Serial.print(" 3");
-  u8g.firstPage();  
-  do {
-    u8g.setFont(u8g_font_6x10);
-    u8g.drawStr( 0, 9, "    T400 v" pcbVersion " test    ");
-    u8g.setFont(u8g_font_5x8);
-    u8g.drawStr( 0, 20, "    Begin in 3");
-  } while( u8g.nextPage() );
-  delay(1000);
-  Serial.print(" 2");
-  u8g.firstPage();  
-  do {
-    u8g.setFont(u8g_font_6x10);
-    u8g.drawStr( 0, 9, "    T400 v" pcbVersion " test    ");
-    u8g.setFont(u8g_font_5x8);
-    u8g.drawStr( 0, 20, "    Begin in 2");
-  } while( u8g.nextPage() );
-  delay(1000);
-  Serial.println(" 1");
-  u8g.firstPage();  
-  do {
-    u8g.setFont(u8g_font_6x10);
-    u8g.drawStr( 0, 9, "    T400 v" pcbVersion " test    ");
-    u8g.setFont(u8g_font_5x8);
-    u8g.drawStr( 0, 20, "    Begin in 1");
-  } while( u8g.nextPage() );
-  delay(1000);
 }
 
 void loop(void) {
+  // Display results
+  u8g.firstPage();  
+  do {
+    draw();
+  } while( u8g.nextPage() );
+  
+  long timeout = millis() + TIMEOUT;
+  while( millis() <= timeout ){
+    if (digitalRead(BUTTON_A_PIN) == LOW) {
+      break;
+    }
+  }
+  
+  
+  Serial.println();
+  Serial.println("T400 v" pcbVersion " test    ");
+  Serial.println("==============    ");
+  
   // Run all the tests.
   // This should probably be moved to the loop() function.
   buttonStatus = buttonTest();  // Do button test. Requires onscreen instructions.
@@ -507,16 +500,6 @@ void loop(void) {
   adcStatus = adcTest();  // Do ADC test
   mcp9800Status = mcp9800Test();  // Do ADC test
   
-  // Display results
-  u8g.firstPage();  
-  do {
-    draw();
-  } while( u8g.nextPage() );
-  
-  while( true ){
-    if (digitalRead(BUTTON_C_PIN) == LOW) {
-      break;
-    }
-  }
+  Serial.println("Test complete!");
 }
 
