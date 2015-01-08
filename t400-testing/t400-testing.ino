@@ -76,6 +76,10 @@ char* buttonTest(void){
   u8g.setFont(u8g_font_6x10);
   long nextUpdate = millis() + TIMEOUT;
   Serial.print("Button D... ");
+  if (digitalRead(BUTTON_D_PIN) == LOW) {
+    Serial.println("FAIL... LOW start");
+    return "FAIL";
+  }
   while( millis() <= nextUpdate){
     // Display question
     u8g.firstPage();  
@@ -89,11 +93,15 @@ char* buttonTest(void){
     }
   }
   if (millis() > nextUpdate){
-    Serial.println("FAIL... D");
+    Serial.println("FAIL... timeout");
     return "FAIL";
   }
   nextUpdate = millis() + TIMEOUT;
   Serial.print("Button E... ");
+  if (digitalRead(BUTTON_E_PIN) == LOW) {
+    Serial.println("FAIL... LOW start");
+    return "FAIL";
+  }
   while( millis() <= nextUpdate){
     // Display question
     u8g.firstPage();  
@@ -107,11 +115,14 @@ char* buttonTest(void){
     }
   }
   if (millis() > nextUpdate){
-    Serial.println("FAIL... E");
+    Serial.println("FAIL... timeout");
     return "FAIL";
   }
   nextUpdate = millis() + TIMEOUT;
   Serial.print("Button PWR... ");
+  if (digitalRead(BUTTON_D_PIN) == HIGH) {
+    Serial.println("FAIL... SW_PWR bug in 0.9");
+  }
   while( millis() <= nextUpdate){
     // Display question
     u8g.firstPage();  
@@ -120,16 +131,20 @@ char* buttonTest(void){
       u8g.drawStr( 0, 64, "<--");
     } while( u8g.nextPage() );
     if (digitalRead(BUTTON_POWER_PIN) == HIGH) {
-      Serial.println("PASS");
+   //   Serial.println("PASS");
       break;
     }
   }
   if (millis() > nextUpdate){
-    Serial.println("FAIL");
+    Serial.println("FAIL... timeout");
     return "FAIL";
   }
   nextUpdate = millis() + TIMEOUT;
   Serial.print("Button A... ");
+  if (digitalRead(BUTTON_A_PIN) == LOW) {
+    Serial.println("FAIL... LOW start");
+    return "FAIL";
+  }
   while( millis() <= nextUpdate){
     // Display question
     u8g.firstPage();  
@@ -143,11 +158,15 @@ char* buttonTest(void){
     }
   }
   if (millis() > nextUpdate){
-    Serial.println("FAIL... A");
+    Serial.println("FAIL... timeout");
     return "FAIL";
   }
   nextUpdate = millis() + TIMEOUT;
-  Serial.print("Button B... ");
+  Serial.print("Button B...");
+  if (digitalRead(BUTTON_B_PIN) == LOW) {
+    Serial.println(" FAIL... LOW start");
+    return "FAIL";
+  }
   while( millis() <= nextUpdate){
     // Display question
     u8g.firstPage();  
@@ -161,11 +180,15 @@ char* buttonTest(void){
     }
   }
   if (millis() > nextUpdate){
-    Serial.println("FAIL... B");
+    Serial.println("FAIL... timeout");
     return "FAIL";
   }
   nextUpdate = millis() + TIMEOUT;
   Serial.print("Button C... ");
+  if (digitalRead(BUTTON_C_PIN) == LOW) {
+    Serial.println("FAIL... LOW start");
+    return "FAIL";
+  }
   while( millis() <= nextUpdate){
     // Display question
     u8g.firstPage();  
@@ -179,7 +202,7 @@ char* buttonTest(void){
     }
   }
   if (millis() > nextUpdate){
-    Serial.println("FAIL... C");
+    Serial.println("FAIL... timeout");
     return "FAIL";
   }
 }
@@ -195,6 +218,7 @@ char* mcp9800Test(void){
 // - Determine the difference between good data and bad data
 //
  Serial.print("JTemp... ");
+ DEBUG_PRINTLN(" debugging");
  u8g.setFont(u8g_font_6x10);
  u8g.firstPage();  
     do {
@@ -215,11 +239,15 @@ char* mcp9800Test(void){
   C = mySensor.readTempC16(AMBIENT) / 16.0;
   F = mySensor.readTempF10(AMBIENT) / 10.0;
   
-  if (C > 23 ) {
-    Serial.print("PASS");DEBUG_PRINT("... ");DEBUG_PRINT(C);DEBUG_PRINTLN(" C");
+  if (C > 5 ) {
+    DEBUG_PRINT("  DEBUG: ");DEBUG_PRINT(C);DEBUG_PRINTLN(" C");
+    DEBUG_PRINT("JTemp... ");
+    Serial.println("PASS");
     return "PASS";
   } else {
-    Serial.println("FAIL");DEBUG_PRINT(C);DEBUG_PRINTLN(" C");
+    DEBUG_PRINT("  DEBUG: ");DEBUG_PRINT(C);DEBUG_PRINTLN(" C");
+    DEBUG_PRINT("JTemp... ");
+    Serial.println("FAIL");
     return "FAIL";
   }
 }
@@ -246,24 +274,24 @@ char* flashTest(void){
     } while( u8g.nextPage() );
     
   long nextUpdate = millis() + TIMEOUT;
-  Serial.println("debugging");
-  Serial.print("  DEBUG: nextUpdate = ");Serial.println(nextUpdate);
-  Serial.print("  DEBUG: AVR = ");Serial.println(AVR);
-  Serial.print("  DEBUG: SPI.transfer(0) = ");Serial.println(SPI.transfer(0));
-  Serial.print("  DEBUG: (SPI.transfer(0)+1) & 1 = ");Serial.println((SPI.transfer(0)+1) & 1);
-//  Serial.print("  DEBUG: flash.initialize() = ");Serial.println(flash.initialize());
+  DEBUG_PRINTLN("debugging");
+  DEBUG_PRINT("  DEBUG: nextUpdate = ");DEBUG_PRINTLN(nextUpdate);
+  DEBUG_PRINT("  DEBUG: AVR = ");DEBUG_PRINTLN(AVR);
+  DEBUG_PRINT("  DEBUG: SPI.transfer(0) = ");DEBUG_PRINTLN(SPI.transfer(0));
+  DEBUG_PRINT("  DEBUG: (SPI.transfer(0)+1) & 1 = ");DEBUG_PRINTLN((SPI.transfer(0)+1) & 1);
+  DEBUG_PRINT("  DEBUG: flash.initialize() = ");DEBUG_PRINTLN(flash.initialize());
   while( millis() <= nextUpdate){
-    Serial.print("  DEBUG: millis() = ");Serial.println(millis());
+    DEBUG_PRINT("  DEBUG: millis() = ");DEBUG_PRINTLN(millis());
     if (flash.initialize()) {
-    //if (flash.initialize()) {           // *** The initialize function does not return anything when
+      DEBUG_PRINT("Flash... ");
       Serial.println("PASS");              // *** the flash fails to start. Without the chip, this
       return "PASS";                       // *** function just hangs. Must modify the library.
     } else {
-      Serial.println("  DEBUG: Flash init failed");
+      DEBUG_PRINTLN("  DEBUG: Flash init failed");
       
     }
   }
-  Serial.print("  DEBUG: millis() = ");Serial.print(millis());Serial.print("  while loop ended");
+  DEBUG_PRINT("  DEBUG: millis() = ");DEBUG_PRINT(millis());DEBUG_PRINTLN("  while loop ended");
   if (millis() > nextUpdate){
     Serial.println("FAIL... timeout");
     return "FAIL";
@@ -436,10 +464,6 @@ char* backlightTest(void){
  delay(delayTime);
  digitalWrite(LCD_BACKLIGHT_PIN, LOW);
  delay(delayTime);
- digitalWrite(LCD_BACKLIGHT_PIN, HIGH);
- delay(delayTime);
- digitalWrite(LCD_BACKLIGHT_PIN, LOW);
- delay(delayTime);
  long nextUpdate = millis() + TIMEOUT;
  while( millis() <= nextUpdate){
     u8g.firstPage();  
@@ -520,7 +544,7 @@ void loop(void) {
   lcdStatus = lcdTest();  // Do LCD test
   flashStatus = flashTest();  // Do SPI flash test
   rtcStatus = rtcTest();  // Do RTC test
-//  sdStatus = sdTest();  // Do SD card test
+  sdStatus = sdTest();  // Do SD card test
   adcStatus = adcTest();  // Do ADC test
   mcp9800Status = mcp9800Test();  // Do ADC test
   

@@ -6,7 +6,7 @@
 
 #define SENSOR_COUNT     4       // Number of sensors on the board (fixed)
 
-#define AVR "ATmega32U4"
+#define AVR "ATmega32U4"  // SPIFlash looked like it wants this
 
 #define OUT_OF_RANGE     99999.9 // Double value representing an invalid temp. measurement
 #define GRAPH_INVALID    -126    // Invalid graph point
