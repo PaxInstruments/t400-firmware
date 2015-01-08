@@ -11,6 +11,7 @@ Firmware for the Pax Instruments T400 temperature datalogger
   - MCP980X temperature sensor https://github.com/PaxInstruments/MCP980X
   - DS3231 RTC https://github.com/PaxInstruments/ds3231
   - FAT16 SD card library https://github.com/PaxInstruments/Fat16 (use the FAT16 directory within this repository)
+  - SPI flash https://github.com/PaxInstruments/Adafruit_TinyFlash
 3. Set the Arduino board to "LilyPad Arduino USB".
 4. Flash the T400 with the Pax Instruments bootloader at https://github.com/PaxInstruments/pi32u4_boards (requires extra steps)
 4. After pluggin in your T400 and turning it on ensure you have selected the correct serial port
