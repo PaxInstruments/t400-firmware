@@ -2,15 +2,17 @@
  * Pax Instruments T400 test firmware
  */
 
-#include "U8glib.h"  // Graphics library
 #include "t400.h"  // T400 hardware definitions
-#include <Fat16.h>  // Fat16 SD card library
+#include <SPI.h>  // Arduino SPI library ( http://arduino.cc/en/Reference/SPI )
+#include <Wire.h>  // For i2c ( http://arduino.cc/en/Reference/Wire )
+#include "U8glib.h"  // Graphics library ( https://github.com/PaxInstruments/u8glib )
+#include <Fat16.h>  // Fat16 SD card library ( https://github.com/PaxInstruments/Fat16 )
 #include <Fat16util.h>  // use functions to print strings from flash memory
-#include <MCP980X.h>      // For MCP9800 ( http://github.com/JChristensen/MCP980X )
-#include <Streaming.h>    // For MCP9800 ( http://arduiniana.org/libraries/streaming )
-#include <Wire.h>         // For MCP9800 ( http://arduino.cc/en/Reference/Wire )
-#include <SPIFlash.h>    //get it here: https://github.com/LowPowerLab/SPIFlash
-#include <SPI.h>
+#include <MCP980X.h>  // For MCP9800 ( https://github.com/PaxInstruments/MCP980X )
+#include <Streaming.h>  // For MCP9800 maybe. Does not seem needed ( http://arduiniana.org/libraries/streaming )
+#include <SPIFlash.h>  // SPI flash https://github.com/PaxInstruments/SPIFlash )
+//#include //  MCP3424 ADC ( https://github.com/PaxInstruments/MCP3424 )
+//#include //  DS3231 RTC ( https://github.com/PaxInstruments/ds3231 )
 
 U8GLIB_PI13264  u8g(LCD_CS, LCD_A0, LCD_RST); // Define the LCD
 
