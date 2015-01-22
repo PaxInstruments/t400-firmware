@@ -94,7 +94,7 @@ void setup(void) {
   memset(graph, -1, sizeof(graph));
   
   #if DEBUG_LCD
-    u8g.setContrast(0x018*8); // Set contrast level
+    u8g.setContrast(LCD_CONTRAST); // Set contrast level
   #endif
   
   u8g.setRot180(); // Rotate screen

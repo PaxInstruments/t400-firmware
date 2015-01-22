@@ -6,6 +6,8 @@
 
 #define SENSOR_COUNT     4       // Number of sensors on the board (fixed)
 
+#define AVR "ATmega32U4"  // SPIFlash looked like it wants this
+
 #define OUT_OF_RANGE     99999.9 // Double value representing an invalid temp. measurement
 #define GRAPH_INVALID    -126    // Invalid graph point
 
@@ -13,7 +15,7 @@
 #define MAXIMUM_GRAPH_POINTS    100
 
 // Set timeout for t400-testing
-#define TIMEOUT 6000  // Define the test timeout interval
+#define TIMEOUT 3000  // Define the test timeout interval
 
 /// I2C addresses
 #define MCP3424_ADDR    0x69
@@ -32,7 +34,7 @@
 #define BATTERY_VBAT_PIN     8    // Battery voltage pin (analog input)
 // VBAT_SENSE                9
 #define BATTERY_STATUS_PIN  10    // Battery status pin
-// FLASH_CS                 11
+#define FLASH_CS            11
 #define LCD_A0              12
 #define BUTTON_C_PIN        13
 // MISO                     14
@@ -45,8 +47,6 @@
 // DATA2                    A3
 #define BUTTON_D_PIN        A4
 #define BUTTON_E_PIN        A5
-
-#define LCD_CONTRAST     0x018*7  // Sets the LCD contrast
 
 
 #define DEBUG            0 // Debugging code: 0 disable, 1 enable
