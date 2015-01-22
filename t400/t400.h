@@ -46,6 +46,8 @@
 #define BUTTON_D_PIN        A4
 #define BUTTON_E_PIN        A5
 
+#define LCD_CONTRAST     0x018*7  // Sets the LCD contrast
+
 
 #define DEBUG            0 // Debugging code: 0 disable, 1 enable
 #define DEBUG_LCD        0 // Debugging code: 0 disable, 1 enable
