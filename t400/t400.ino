@@ -126,7 +126,7 @@ void setup(void) {
   noInterrupts();
     TCCR4A = 0;
     TCCR4B = 0;
-    TCCR4B |= (1 << CS41);    // 8 prescaler 
+    TCCR4B |= (1 << CS43);    // 8 prescaler 
     TIMSK4 |= (1 << TOIE4);   // enable timer overflow interrupt
   interrupts();             // enable all interrupts
   
@@ -295,13 +295,13 @@ void loop() {
 //  #endif
   }
   
-  if(userButtons.isPressed()) {
-    uint8_t button = userButtons.getPressed();
+  if(userButtons.pending()) {
+    uint8_t button = userButtons.getPending();
     
     if(button == BUTTON_POWER) {
       Serial.print("Powering off!");
-      stopLogging();
-      powerOff(u8g);
+//      stopLogging();
+//      powerOff(u8g);
     }
     else if(button == BUTTON_A) {
       if(!logging) {

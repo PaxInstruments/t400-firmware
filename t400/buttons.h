@@ -14,8 +14,8 @@
 
 class Buttons {
   private:
-    uint8_t pressedButton;  // Stores the button that was pressed
-    uint8_t lastPressed;
+    uint8_t stuckButtonMask;
+    uint8_t pendingButtons;
     
   public:
     // Initialize the buttons class
@@ -25,10 +25,10 @@ class Buttons {
     void buttonTask();
     
     // Returns true if a button is pressed
-    bool isPressed();
+    bool pending();
     
     // If a button is pressed, get it!
-    uint8_t getPressed();
+    uint8_t getPending();
 };
 
 
