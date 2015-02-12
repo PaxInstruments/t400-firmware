@@ -122,8 +122,8 @@ char* buttonTest(void){
   }
   nextUpdate = millis() + TIMEOUT;
   Serial.print("Button PWR... ");
-  if (digitalRead(BUTTON_D_PIN) == HIGH) {
-    Serial.println("FAIL... SW_PWR bug in 0.9");
+  if (digitalRead(BUTTON_POWER_PIN) == LOW) {
+    Serial.println("FAIL... LOW start");
   }
   while( millis() <= nextUpdate){
     // Display question
@@ -132,8 +132,8 @@ char* buttonTest(void){
       u8g.drawStr( 25, 35, "Button PWR...");
       u8g.drawStr( 0, 64, "<--");
     } while( u8g.nextPage() );
-    if (digitalRead(BUTTON_POWER_PIN) == HIGH) {
-   //   Serial.println("PASS");
+    if (digitalRead(BUTTON_POWER_PIN) == LOW) {
+      Serial.println("PASS");
       break;
     }
   }
@@ -506,6 +506,7 @@ void setup(void) {
   // ****** It looks like the pullup resistor is enabled. This is the RXLED ******
   
   u8g.setRot180();  // rotate screen
+  u8g.setContrast(150);
   
   Serial.begin(9600);
 }
