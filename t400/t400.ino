@@ -298,12 +298,12 @@ void loop() {
   if(userButtons.pending()) {
     uint8_t button = userButtons.getPending();
     
-    if(button == BUTTON_POWER) {
+    if(button == BUTTON_POWER) { // Disable power
       Serial.print("Powering off!");
 //      stopLogging();
 //      powerOff(u8g);
     }
-    else if(button == BUTTON_A) {
+    else if(button == BUTTON_A) { // Start/stop logging
       if(!logging) {
         startLogging();
       }
@@ -313,13 +313,14 @@ void loop() {
       
       needsRefresh = true;
     }
-    else if(button == BUTTON_B) {
+    else if(button == BUTTON_B) { // Cycle log interval
       if(!logging) {
         logInterval = (logInterval + 1) % LOG_INTERVAL_COUNT;
+        graphPoints = 0; // Reset the graph history (because the scale is different)
         needsRefresh = true;
       }
     }
-    else if(button == BUTTON_E) {
+    else if(button == BUTTON_E) { // Toggle backlight
       if(backlightEnabled) {
         disableBacklight();
         backlightEnabled = false;
