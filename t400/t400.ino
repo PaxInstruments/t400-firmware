@@ -55,7 +55,7 @@ MCP3424      ADC1(MCP3424_ADDR, MCP342X_GAIN_X8, MCP342X_16_BIT);  // address, g
 MCP980X ambientSensor(0);      // Ambient temperature sensor
 
 double temperatures[SENSOR_COUNT];
-static uint8_t temperatureChannels[SENSOR_COUNT] = {2, 3, 0, 1};
+static uint8_t temperatureChannels[SENSOR_COUNT] = {1, 0, 3, 2};
 double ambient =  0;        // Ambient temperature
 
 //// Graph data
