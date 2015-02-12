@@ -3,19 +3,18 @@
 
 #include <util/atomic.h>
 
-// Button definitions
-button buttons[BUTTON_COUNT] = {
-  {BUTTON_A_PIN,     0},  // Button A, PD4
-  {BUTTON_B_PIN,     0},  // Button B, PD6
-  {BUTTON_C_PIN,     0},  // Button C, PD7
-  {BUTTON_D_PIN,     0},  // Button D, PD2
-  {BUTTON_E_PIN,     0},  // Button E, PD3
-  {BUTTON_POWER_PIN, 1},  // Power button, PE6
+uint8_t buttonPins[BUTTON_COUNT] = {
+  BUTTON_A_PIN,
+  BUTTON_B_PIN,
+  BUTTON_C_PIN,
+  BUTTON_D_PIN,
+  BUTTON_E_PIN,
+  BUTTON_POWER_PIN,
 };
 
 void Buttons::setup() {
   for(uint8_t b = 0; b < BUTTON_COUNT; b++) {
-    pinMode(buttons[b].pin, INPUT);
+    pinMode(buttonPins[b], INPUT);
   }
   
   pressedButton = BUTTON_COUNT;
@@ -27,7 +26,7 @@ void Buttons::setup() {
 void Buttons::buttonTask() {
   // If a button is currently pressed, don't bother looking for a new one
   if (lastPressed != BUTTON_COUNT) {
-    if(digitalRead(buttons[lastPressed].pin) == buttons[lastPressed].inverted) {
+    if(digitalRead(buttonPins[lastPressed]) == 0) {
       return;
     }
     lastPressed = BUTTON_COUNT;
@@ -35,7 +34,7 @@ void Buttons::buttonTask() {
   
   for(uint8_t b = 0; b < BUTTON_COUNT; b++) {
     // TODO: Use port access here for speed?
-    if (digitalRead(buttons[b].pin) == buttons[b].inverted) {
+    if (digitalRead(buttonPins[b]) == 0) {
       lastPressed = b;
       pressedButton = b;
       return;

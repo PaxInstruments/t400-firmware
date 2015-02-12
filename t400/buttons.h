@@ -10,14 +10,7 @@
 #define BUTTON_D      3 // Toggle channels
 #define BUTTON_E      4 // Backlight on/off
 #define BUTTON_POWER  5 // Power on/off
-#define BUTTON_COUNT   6  // Number of buttons in the system
-
-
-struct button {
-  uint8_t pin;
-  uint8_t inverted;
-};
-
+#define BUTTON_COUNT  6  // Number of buttons in the system
 
 class Buttons {
   private:
