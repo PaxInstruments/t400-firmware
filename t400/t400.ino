@@ -23,6 +23,9 @@ During compilation on OSX you may receive errors relating to `RobotControl()` in
  */
 
 // Import libraries
+#define __STDC_LIMIT_MACROS
+#include <stdint.h>
+
 #include "U8glib.h"     // LCD
 #include <Wire.h>       // i2c
 #include <MCP3424.h>    // ADC
@@ -63,6 +66,7 @@ int8_t graph[MAXIMUM_GRAPH_POINTS][SENSOR_COUNT]={}; // define the size of the d
 uint8_t graphPoints = 0;        // Number of valid points to graph
 
 int16_t graphMin = 0;
+int16_t graphMax = 0;
 int16_t graphStep = 10;
 int8_t graphScale = 1;    // Number of degrees per dot in the graph[] array.
 
@@ -154,12 +158,11 @@ void stopLogging() {
   closeSd();
 }
 
-void updateData() {
-  DS3231_get(&rtcTime);
-
-  ambient = ambientSensor.readTempC16(AMBIENT) / 16.0;
+static void readTemperatures() {
+  double measuredVoltageMv;
+  double temperature;
   
-  // ADC read loop: Start a measurement, wait until it is finished, then 
+  // ADC read loop: Start a measurement, wait until it is finished, then record it
   for(uint8_t i = 0; i < SENSOR_COUNT; i++) {
     ADC1.startMeasurement(temperatureChannels[i]);
     do {
@@ -168,9 +171,8 @@ void updateData() {
       delay(75);
     } while(!ADC1.measurementReady());
 
-    double measuredVoltageMv = ADC1.getMeasurement();
-
-    double temperature = GetTypKTemp(measuredVoltageMv*1000);
+    measuredVoltageMv = ADC1.getMeasurement();
+    temperature = GetTypKTemp(measuredVoltageMv*1000);
 
     if(temperature == OUT_OF_RANGE) {
       temperatures[i] = OUT_OF_RANGE;
@@ -179,7 +181,9 @@ void updateData() {
       temperatures[i] = temperature + ambient;
     }
   }
-  
+}
+
+static void writeOutputs() {
   snprintf(updateBuffer, BUFF_MAX, "%02d:%02d:%02d, ", rtcTime.hour, rtcTime.min, rtcTime.sec);
   dtostrf(ambient, 1, 2, updateBuffer+strlen(updateBuffer));
     
@@ -198,6 +202,16 @@ void updateData() {
   if(logging) {
     logToSd(updateBuffer);
   }
+}
+  
+static void updateData() {
+  DS3231_get(&rtcTime);
+
+  ambient = ambientSensor.readTempC16(AMBIENT) / 16.0;
+  
+  readTemperatures();
+  
+  writeOutputs();
 
   // TODO: Don't shift the data here, rotate it during display.
   // Copy the new temperature data points into the graph array
@@ -209,7 +223,7 @@ void updateData() {
 
   for(uint8_t sensor = 0; sensor < SENSOR_COUNT; sensor++) {
     if(temperatures[sensor] == OUT_OF_RANGE) {
-      graph[0][sensor] == GRAPH_INVALID;
+      graph[0][sensor] = GRAPH_INVALID;
     }
     else {
       graph[0][sensor] = temperatures[sensor]/graphScale;
@@ -218,8 +232,8 @@ void updateData() {
 
   
   // Figure out the correct graph interval
-  graphMin = 9999;
-  int16_t graphMax = -9999;
+  graphMin = INT16_MAX;
+  graphMax = INT16_MIN;
   for(uint8_t pos = sizeof(graph)/(4*sizeof(byte))-1; pos>0; pos--){
     for(uint8_t sensor = 0; sensor < SENSOR_COUNT; sensor++) {
       if ((graph[pos][sensor] < graphMin) & (graph[pos][sensor] != GRAPH_INVALID)) {
@@ -233,20 +247,10 @@ void updateData() {
   
   // TODO: Handle the case where 0 is not the bottom measurement.
   graphMin = 0;
-  
+
   int newGraphScale = 1 + (graphMax - graphMin)/50;
   
   graphStep = 10*newGraphScale;
-
-//  Serial.print(graphMin);
-//  Serial.print(", ");
-//  Serial.print(graphMax);
-//  Serial.print(", ");  
-//  Serial.print(graphScale);
-//  Serial.print(", ");
-//  Serial.print(newGraphScale);
-//  Serial.print(", ");
-//  Serial.println("");
   
   if(graphScale != newGraphScale) {
     for(int i = sizeof(graph)/(4*sizeof(byte))-1; i>0;i--){

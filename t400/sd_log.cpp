@@ -77,10 +77,12 @@ void initSd(char* fileName) {
 }
 
 void closeSd() {
-  if(file.isOpen()) {
-    syncSd(true);
-    file.close();
+  if(!file.isOpen()) {
+    return;
   }
+  
+  syncSd(true);
+  file.close();
 }
 
 void logToSd(char* message) {
