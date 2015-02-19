@@ -6,7 +6,7 @@
 // If changing the lower limit remember to change it in GetTypKTemp().
 #define TEMP_TYPE_K_LENGTH 101
 
-const int32_t tempTypK[TEMP_TYPE_K_LENGTH] = 
+const int32_t tempTypK[TEMP_TYPE_K_LENGTH] PROGMEM = 
 { 
   -6458,  //-270
   -6411, // -260
