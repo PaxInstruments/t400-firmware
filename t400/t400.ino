@@ -74,6 +74,8 @@ uint8_t logIntervals[LOG_INTERVAL_COUNT] = {1, 2, 5, 10, 30, 60};  // Available 
 uint8_t logInterval    = 1;       // currently selected log interval
 boolean logging = false;          // True if we are currently logging to a file
 
+char updateBuffer[BUFF_MAX];      // Scratch buffer to write serial/sd output into
+struct ts rtcTime;                // Buffer to read RTC time into
 
 // This function runs once. Use it for setting up the program state.
 void setup(void) {
@@ -153,11 +155,7 @@ void stopLogging() {
 }
 
 void updateData() {
-  // RTC stuff
-  char buff[BUFF_MAX];
-  struct ts t;
-  
-  DS3231_get(&t);
+  DS3231_get(&rtcTime);
 
   ambient = ambientSensor.readTempC16(AMBIENT) / 16.0;
   
@@ -182,23 +180,23 @@ void updateData() {
     }
   }
   
-  snprintf(buff, BUFF_MAX, "%02d:%02d:%02d, ", t.hour, t.min, t.sec);
-  dtostrf(ambient, 1, 2, buff+strlen(buff));
+  snprintf(updateBuffer, BUFF_MAX, "%02d:%02d:%02d, ", rtcTime.hour, rtcTime.min, rtcTime.sec);
+  dtostrf(ambient, 1, 2, updateBuffer+strlen(updateBuffer));
     
   for(uint8_t i = 0; i < SENSOR_COUNT; i++) {
     if(temperatures[i] == OUT_OF_RANGE) {
-      strcpy(buff+strlen(buff), ", -");
+      strcpy(updateBuffer+strlen(updateBuffer), ", -");
     }
     else {
-      strcpy(buff+strlen(buff), ", ");
-      dtostrf(temperatures[i], 0, 2, buff+strlen(buff));
+      strcpy(updateBuffer+strlen(updateBuffer), ", ");
+      dtostrf(temperatures[i], 0, 2, updateBuffer+strlen(updateBuffer));
     }
   }
 
-  Serial.println(buff);
+  Serial.println(updateBuffer);
 
   if(logging) {
-    logToSd(buff);
+    logToSd(updateBuffer);
   }
 
   // TODO: Don't shift the data here, rotate it during display.
