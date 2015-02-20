@@ -130,8 +130,12 @@ void draw(
       }
 
       // Draw labels on the right side of graph
-      for(uint8_t i=0; i<4; i++){
-        u8g.drawStr(113+5*i, graph[0][i]+3, dtostrf(i+1,1,0,buf));
+      // TODO:scale these correctly?
+      for(uint8_t sensor=0; sensor<4; sensor++){
+        const uint8_t yDisplaySize = 64;
+        const uint8_t yOffset = yDisplaySize - 3;
+        
+        u8g.drawStr(113+5*sensor, yOffset - graphPoint(0, sensor) + 3, dtostrf(sensor+1,1,0,buf));
       };
       
       // Display data from graph[][] array to the graph on screen
