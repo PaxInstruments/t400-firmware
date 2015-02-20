@@ -33,7 +33,7 @@ char* mcp9800Status = "    ";
 void draw(void) {
   // graphic commands to redraw the complete screen should be placed here
   u8g.setFont(u8g_font_6x10);
-  u8g.drawStr( 0, 9, "T400 v" pcbVersion "    start -->");
+  u8g.drawStr( 0, 9, "T400 v" pcbVersion "   start -->");
   u8g.setFont(u8g_font_5x8);
   u8g.drawStr( 0, 18, "Buttons: ");u8g.drawStr( 45, 18, buttonStatus);u8g.drawStr( 75, 18, "LCD: ");u8g.drawStr( 100, 18, lcdStatus);
   u8g.drawStr( 0, 26, "  Flash: ");u8g.drawStr( 45, 26, flashStatus);u8g.drawStr( 75, 26, "RTC: ");u8g.drawStr( 100, 26, rtcStatus);
