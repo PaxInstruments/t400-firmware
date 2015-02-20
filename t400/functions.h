@@ -31,11 +31,11 @@ inline void setupBacklight() {
 } 
   
 inline void enableBacklight() {
-  digitalWrite(LCD_BACKLIGHT_PIN, HIGH);
+  digitalWrite(LCD_BACKLIGHT_PIN, LOW);
 }
 
 inline void disableBacklight() {
-  digitalWrite(LCD_BACKLIGHT_PIN, LOW);
+  digitalWrite(LCD_BACKLIGHT_PIN, HIGH);
 }
 
 #endif
