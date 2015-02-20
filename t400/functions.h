@@ -7,6 +7,9 @@
 #define GRAPH_INTERVALS 5
 
 
+extern void resetGraph();
+extern void updateGraph(double* temperatures);
+
 // Lookup table for converting K-type thermocouple measurements into 
 // @param microVolt reading from the ADC
 // @return Temperature, in ???
@@ -17,12 +20,7 @@ extern void draw(
   double* temperatures,
   double ambient,
   char* fileName,
-  int8_t graph[100][4],
-  uint8_t graphPoints,
-  uint8_t logInterval,
-  uint8_t graphScale,
-  int16_t graph_min,
-  int16_t graph_step
+  uint8_t logInterval
   );
   
   

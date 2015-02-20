@@ -23,9 +23,6 @@ During compilation on OSX you may receive errors relating to `RobotControl()` in
  */
 
 // Import libraries
-#define __STDC_LIMIT_MACROS
-#include <stdint.h>
-
 #include "U8glib.h"     // LCD
 #include <Wire.h>       // i2c
 #include <MCP3424.h>    // ADC
@@ -51,35 +48,22 @@ char fileName[] =        "LD0000.CSV";
 // Graphical LCD
 U8GLIB_PI13264  u8g(LCD_CS, LCD_A0, LCD_RST); // Use HW-SPI
 
-// User buttons
-//Buttons        userButtons;
-
 // MCP3424 for thermocouple measurements
 MCP3424      ADC1(MCP3424_ADDR, MCP342X_GAIN_X8, MCP342X_16_BIT);  // address, gain, resolution
 
 MCP980X ambientSensor(0);      // Ambient temperature sensor
 
-
 const uint8_t temperatureChannels[SENSOR_COUNT] = {1, 0, 3, 2};  // Map of ADC inputs to thermocouple channels
 double temperatures[SENSOR_COUNT];  // Current temperature of each thermocouple input
 double ambient =  0;        // Ambient temperature
 
-//// Graph data
-int8_t graph[MAXIMUM_GRAPH_POINTS][SENSOR_COUNT]={}; // Array to hold graph data
-uint8_t currentPoint = 0;                            // 
-uint8_t graphPoints = 0;                             // Number of valid points to graph
-
-int16_t graphMin = 0;
-int16_t graphMax = 0;
-int16_t graphStep = 10;
-int8_t graphScale = 1;    // Number of degrees per dot in the graph[] array.
 
 
 boolean backlightEnabled;
 
 unsigned long lastLogTime = 0;   // time data was logged
 #define LOG_INTERVAL_COUNT 6
-uint8_t logIntervals[LOG_INTERVAL_COUNT] = {1, 2, 5, 10, 30, 60};  // Available log intervals, in seconds
+const uint8_t logIntervals[LOG_INTERVAL_COUNT] = {1, 2, 5, 10, 30, 60};  // Available log intervals, in seconds
 uint8_t logInterval    = 0;       // currently selected log interval
 boolean logging = false;          // True if we are currently logging to a file
 
@@ -101,8 +85,7 @@ void setup(void) {
   backlightEnabled = true;
   enableBacklight();
   
-  // Initialize the data array to a known starting value
-  memset(graph, -1, sizeof(graph));
+  resetGraph();
   
   #if DEBUG_LCD
     u8g.setContrast(LCD_CONTRAST); // Set contrast level
@@ -122,14 +105,6 @@ void setup(void) {
 //  set_next_alarm();
   
   Buttons::setup();
-  
-//  for(int point = 0; point < MAXIMUM_GRAPH_POINTS; point++) {
-//    graph[point][0] = 0;
-//    graph[point][1] = 10;
-//    graph[point][2] = 20;
-//    graph[point][3] = 40;
-//  }
-//  graphPoints = MAXIMUM_GRAPH_POINTS;
   
   // Turn on the high-speed interrupt loop
   // TODO: Adjust interrupt speed.
@@ -232,59 +207,7 @@ static void updateData() {
   
   writeOutputs();
 
-  // TODO: Don't shift the data here, rotate it during display.
-  // Copy the new temperature data points into the graph array
-  for(uint8_t pos = sizeof(graph)/(4*sizeof(byte))-1; pos>0;pos--){
-    for(uint8_t sensor = 0; sensor < SENSOR_COUNT; sensor++) {
-      graph[pos][sensor] = graph[pos-1][sensor];
-    }
-  };
-
-  for(uint8_t sensor = 0; sensor < SENSOR_COUNT; sensor++) {
-    if(temperatures[sensor] == OUT_OF_RANGE) {
-      graph[0][sensor] = GRAPH_INVALID;
-    }
-    else {
-      graph[0][sensor] = temperatures[sensor]/graphScale;
-    }
-  }
-
-  
-  // Figure out the correct graph interval
-  graphMin = INT16_MAX;
-  graphMax = INT16_MIN;
-  for(uint8_t pos = sizeof(graph)/(4*sizeof(byte))-1; pos>0; pos--){
-    for(uint8_t sensor = 0; sensor < SENSOR_COUNT; sensor++) {
-      if ((graph[pos][sensor] < graphMin) & (graph[pos][sensor] != GRAPH_INVALID)) {
-        graphMin = graph[pos][sensor];
-      }
-      if ((graph[pos][sensor] > graphMax) & (graph[pos][sensor] != GRAPH_INVALID)) {
-        graphMax = graph[pos][sensor];
-      }
-    }
-  };
-  
-  // TODO: Handle the case where 0 is not the bottom measurement.
-  graphMin = 0;
-
-  int newGraphScale = 1 + (graphMax - graphMin)/50;
-  
-  graphStep = 10*newGraphScale;
-  
-  if(graphScale != newGraphScale) {
-    for(int i = sizeof(graph)/(4*sizeof(byte))-1; i>0;i--){
-      for(int j = 0; j < 4; j++) {
-        graph[i][j] = graph[i][j]*((double)graphScale/newGraphScale);
-      }
-    };
-    
-    graphScale = newGraphScale;
-  }
-  
-  
-  if(graphPoints < MAXIMUM_GRAPH_POINTS) {
-    graphPoints++;
-  }
+  updateGraph(temperatures);
 }
 
 // This function is called periodically, and performs slow tasks:
@@ -306,14 +229,6 @@ void loop() {
     updateData();
     
     needsRefresh = true;
-    
-  
-//    // TODO: What interval to consider this?
-//  #ifdef DEBUG
-//    Serial.print(("DEBUG: Available RAM = "));
-//    Serial.print(FreeRam());
-//    Serial.println(" bytes");
-//  #endif
   }
   
   if(Buttons::pending()) {
@@ -337,7 +252,7 @@ void loop() {
     else if(button == BUTTON_B) { // Cycle log interval
       if(!logging) {
         logInterval = (logInterval + 1) % LOG_INTERVAL_COUNT;
-        graphPoints = 0; // Reset the graph history (because the scale is different)
+        resetGraph();  // Reset the graph, to keep the x axis consistent
         needsRefresh = true;
       }
     }
@@ -363,12 +278,7 @@ void loop() {
         temperatures, 
         ambient,
         fileName,
-        graph,
-        graphPoints,
-        logIntervals[logInterval],
-        graphScale,
-        graphMin,
-        graphStep
+        logIntervals[logInterval]
       );
     }
     else {
@@ -376,12 +286,7 @@ void loop() {
         temperatures, 
         ambient,
         "Not logging",
-        graph,
-        graphPoints,
-        logIntervals[logInterval],
-        graphScale,
-        graphMin,
-        graphStep
+        logIntervals[logInterval]
       );
     }
   }

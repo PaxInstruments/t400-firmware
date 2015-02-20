@@ -1,3 +1,6 @@
+#define __STDC_LIMIT_MACROS
+#include <stdint.h>
+
 #include <Fat16.h> // FAT16 CD card library
 #include <Fat16util.h>
 #include "U8glib.h" // LCD
@@ -5,17 +8,90 @@
 #include "t400.h"
 #include "functions.h"
 
+
+
+//// Graph data
+int8_t graph[MAXIMUM_GRAPH_POINTS][SENSOR_COUNT]={}; // Array to hold graph data
+uint8_t graphCurrentPoint;                           // Index of latest point added to the graph (0,MAXIMUM_GRAPH_POINTS]
+uint8_t graphPoints;                                 // Number of valid points to graph
+
+#define graphPoint(point, sensor) (graph[(point + graphCurrentPoint)%MAXIMUM_GRAPH_POINTS][sensor])
+
+int16_t graphMin;
+int16_t graphStep;
+int8_t graphScale;    // Number of degrees per dot in the graph[] array.
+
+
+void resetGraph() {
+  graphCurrentPoint = 0;
+  graphPoints = 0;
+  
+  graphMin = 0;
+  graphStep = 20;
+  graphScale = 2;
+}
+
+void updateGraph(double* temperatures) {
+
+  // Increment the current graph point (it wraps around)
+  if(graphCurrentPoint == 0) {
+    graphCurrentPoint = MAXIMUM_GRAPH_POINTS - 1;
+  }
+  else {
+    graphCurrentPoint -= 1;
+  }
+  
+  // Increment the number of stored graph points
+  if(graphPoints < MAXIMUM_GRAPH_POINTS) {
+    graphPoints++;
+  }
+
+  // Record the current readings in the graph
+  for(uint8_t sensor = 0; sensor < SENSOR_COUNT; sensor++) {
+    graphPoint(0, sensor) = (temperatures[sensor] == OUT_OF_RANGE) ? GRAPH_INVALID : temperatures[sensor]/graphScale;
+  }
+  
+//  // Figure out the correct graph interval
+//  // TODO: Base this on current temperatures only?
+//  graphMin = INT16_MAX;
+//  int16_t graphMax = INT16_MIN;
+//  for(uint8_t pos = sizeof(graph)/(4*sizeof(byte))-1; pos>0; pos--){
+//    for(uint8_t sensor = 0; sensor < SENSOR_COUNT; sensor++) {
+//      if ((graph[pos][sensor] < graphMin) & (graph[pos][sensor] != GRAPH_INVALID)) {
+//        graphMin = graph[pos][sensor];
+//      }
+//      if ((graph[pos][sensor] > graphMax) & (graph[pos][sensor] != GRAPH_INVALID)) {
+//        graphMax = graph[pos][sensor];
+//      }
+//    }
+//  };
+  
+//  // TODO: Handle the case where 0 is not the bottom measurement.
+//  graphMin = 0;
+//
+//  int newGraphScale = 1 + (graphMax - graphMin)/50;
+//  
+//  graphStep = 10*newGraphScale;
+//  
+//  if(graphScale != newGraphScale) {
+//    for(int i = sizeof(graph)/(4*sizeof(byte))-1; i>0;i--){
+//      for(int j = 0; j < 4; j++) {
+//        graph[i][j] = graph[i][j]*((double)graphScale/newGraphScale);
+//      }
+//    };
+//    
+//    graphScale = newGraphScale;
+//  }
+}
+
+
+
 void draw(
   U8GLIB_PI13264& u8g,
   double* temperatures,
   double ambient,
   char* fileName,
-  int8_t graph[100][4],
-  uint8_t graphPoints,
-  uint8_t logInterval,
-  uint8_t graphScale,
-  int16_t graph_min,
-  int16_t graph_step
+  uint8_t logInterval
   ) {
     
   u8g.setFont(u8g_font_5x8); // Select font. See https://code.google.com/p/u8glib/wiki/fontsize
@@ -31,7 +107,7 @@ void draw(
     if (page < 6) {
       u8g.drawLine( 0, 16, 132,  16);    // hline between status bar and graph
       
-      if((graph_min < 0) | (graph_min + graph_step*5 > 99)) {
+      if((graphMin < 0) | (graphMin + graphStep*5 > 99)) {
         // 3 digit display
         u8g.drawLine(15, 64,  15,  18);    // Vertical axis
       }
@@ -43,13 +119,13 @@ void draw(
       // TODO: prerender these strings?
       for(uint8_t i = 0; i < GRAPH_INTERVALS; i++) {
         u8g.drawPixel(11,61 - i*10);
-        if((graph_min < 0) | (graph_min + graph_step*5 > 99)) {
+        if((graphMin < 0) | (graphMin + graphStep*5 > 99)) {
           // 3 digit display
-          u8g.drawStr(0, 64 - i*10, dtostrf(graph_min + graph_step*i,3,0,buf));
+          u8g.drawStr(0, 64 - i*10, dtostrf(graphMin + graphStep*i,3,0,buf));
         }
         else {
           // 2 digit display
-          u8g.drawStr(0, 64 - i*10, dtostrf(graph_min + graph_step*i,2,0,buf));
+          u8g.drawStr(0, 64 - i*10, dtostrf(graphMin + graphStep*i,2,0,buf));
         }
       }
 
@@ -62,24 +138,23 @@ void draw(
       
       uint8_t lastPoint = graphPoints;
       
-      // On a 3 digit display, don't 
-      if((graph_min < 0) | (graph_min + graph_step*5 > 99)) {
+      // On a 3 digit display, skip the last n points since they would be under the label
+      if((graphMin < 0) | (graphMin + graphStep*5 > 99)) {
         // 3 digit display
         if(lastPoint > MAXIMUM_GRAPH_POINTS - 3) {
           lastPoint = MAXIMUM_GRAPH_POINTS - 3;
         }
       }
       
-      for(uint8_t i = 0; i < lastPoint;i++){
-        const uint8_t  x = MAXIMUM_GRAPH_POINTS-i+12;        
-        const int8_t* pos = graph[i];
+      for(uint8_t point = 0; point < lastPoint; point++){
+        const uint8_t  x = MAXIMUM_GRAPH_POINTS-point+12;
         
         const uint8_t yDisplaySize = 64;
         const uint8_t yOffset = yDisplaySize - 3;
         
         for(uint8_t sensor = 0; sensor < 4; sensor++) {
-          if(pos[sensor] != GRAPH_INVALID) {
-            u8g.drawPixel(x, yOffset - pos[sensor]);
+          if(graphPoint(point, sensor) != GRAPH_INVALID) {
+            u8g.drawPixel(x, yOffset - graphPoint(point,sensor));
           }
         }
       };
