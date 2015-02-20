@@ -83,7 +83,7 @@ void setup(void) {
   
   setupBacklight();
   backlightEnabled = true;
-  enableBacklight();
+  setBacklight(!backlightEnabled);
   
   resetGraph();
   
@@ -264,14 +264,8 @@ void loop() {
       }
     }
     else if(button == BUTTON_E) { // Toggle backlight
-      if(backlightEnabled) {
-        disableBacklight();
-        backlightEnabled = false;
-      }
-      else {
-        enableBacklight();
-        backlightEnabled = true;
-      }
+      backlightEnabled = !backlightEnabled;
+      setBacklight(!backlightEnabled);
     }
   }
   
