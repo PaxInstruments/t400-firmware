@@ -235,9 +235,10 @@ void loop() {
     uint8_t button = Buttons::getPending();
     
     if(button == BUTTON_POWER) { // Disable power
-      Serial.print("Powering off!");
-//      stopLogging();
-//      powerOff(u8g);
+      if(!logging) {
+        Serial.print("Powering off!\n");
+//        powerOff(u8g);
+      }
     }
     else if(button == BUTTON_A) { // Start/stop logging
       if(!logging) {
@@ -253,6 +254,12 @@ void loop() {
       if(!logging) {
         logInterval = (logInterval + 1) % LOG_INTERVAL_COUNT;
         resetGraph();  // Reset the graph, to keep the x axis consistent
+        needsRefresh = true;
+      }
+    }
+    else if(button == BUTTON_C) { // Cycle temperature units
+      if(!logging) {
+        // TODO
         needsRefresh = true;
       }
     }
