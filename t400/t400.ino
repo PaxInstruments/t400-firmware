@@ -44,38 +44,43 @@ During compilation on OSX you may receive errors relating to `RobotControl()` in
 #define BUFF_MAX         80   // Size of the character buffer
 
 
+//#define FAKE_TEMPERATURES
+
 char fileName[] =        "LD0000.CSV";
 
 // Graphical LCD
 U8GLIB_PI13264  u8g(LCD_CS, LCD_A0, LCD_RST); // Use HW-SPI
 
 // User buttons
-Buttons        userButtons;
+//Buttons        userButtons;
 
 // MCP3424 for thermocouple measurements
 MCP3424      ADC1(MCP3424_ADDR, MCP342X_GAIN_X8, MCP342X_16_BIT);  // address, gain, resolution
 
 MCP980X ambientSensor(0);      // Ambient temperature sensor
 
-double temperatures[SENSOR_COUNT];
-static uint8_t temperatureChannels[SENSOR_COUNT] = {1, 0, 3, 2};
+
+const uint8_t temperatureChannels[SENSOR_COUNT] = {1, 0, 3, 2};  // Map of ADC inputs to thermocouple channels
+double temperatures[SENSOR_COUNT];  // Current temperature of each thermocouple input
 double ambient =  0;        // Ambient temperature
 
 //// Graph data
-int8_t graph[MAXIMUM_GRAPH_POINTS][SENSOR_COUNT]={}; // define the size of the data array
-uint8_t graphPoints = 0;        // Number of valid points to graph
+int8_t graph[MAXIMUM_GRAPH_POINTS][SENSOR_COUNT]={}; // Array to hold graph data
+uint8_t currentPoint = 0;                            // 
+uint8_t graphPoints = 0;                             // Number of valid points to graph
 
 int16_t graphMin = 0;
 int16_t graphMax = 0;
 int16_t graphStep = 10;
 int8_t graphScale = 1;    // Number of degrees per dot in the graph[] array.
 
+
 boolean backlightEnabled;
 
 unsigned long lastLogTime = 0;   // time data was logged
 #define LOG_INTERVAL_COUNT 6
 uint8_t logIntervals[LOG_INTERVAL_COUNT] = {1, 2, 5, 10, 30, 60};  // Available log intervals, in seconds
-uint8_t logInterval    = 1;       // currently selected log interval
+uint8_t logInterval    = 0;       // currently selected log interval
 boolean logging = false;          // True if we are currently logging to a file
 
 char updateBuffer[BUFF_MAX];      // Scratch buffer to write serial/sd output into
@@ -105,7 +110,6 @@ void setup(void) {
   
   u8g.setRot180(); // Rotate screen
   u8g.setColorIndex(1); // Set color mode to binary
-  
 
   ADC1.begin();
 
@@ -117,7 +121,7 @@ void setup(void) {
 //  DS3231_clear_a1f();
 //  set_next_alarm();
   
-  userButtons.setup();
+  Buttons::setup();
   
 //  for(int point = 0; point < MAXIMUM_GRAPH_POINTS; point++) {
 //    graph[point][0] = 0;
@@ -146,7 +150,7 @@ void startLogging() {
   }
   
   logging = true;
-  initSd(fileName);
+  sd::init(fileName);
 }
 
 void stopLogging() {
@@ -155,16 +159,20 @@ void stopLogging() {
   }
   
   logging = false;
-  closeSd();
+  sd::close();
 }
 
 static void readTemperatures() {
   double measuredVoltageMv;
   double temperature;
   
+#ifdef FAKE_TEMPERATURES
+  static double count = 0;
+#endif
+  
   // ADC read loop: Start a measurement, wait until it is finished, then record it
-  for(uint8_t i = 0; i < SENSOR_COUNT; i++) {
-    ADC1.startMeasurement(temperatureChannels[i]);
+  for(uint8_t channel = 0; channel < SENSOR_COUNT; channel++) {
+    ADC1.startMeasurement(temperatureChannels[channel]);
     do {
       // Delay a while. At 16-bit resolution, the ADC can do a speed of 1/15 = .066seconds/cycle
       // Let's wait a little longer than that in case there is set up time for changing channels.
@@ -174,11 +182,22 @@ static void readTemperatures() {
     measuredVoltageMv = ADC1.getMeasurement();
     temperature = GetTypKTemp(measuredVoltageMv*1000);
 
+#ifdef FAKE_TEMPERATURES
+    if(channel == 0) {
+      temperature  = 0 + count;
+    }
+    
+    count +=.5;
+    if(count > 50) {
+      count = 0;
+    }
+#endif
+
     if(temperature == OUT_OF_RANGE) {
-      temperatures[i] = OUT_OF_RANGE;
+      temperatures[channel] = OUT_OF_RANGE;
     }
     else {
-      temperatures[i] = temperature + ambient;
+      temperatures[channel] = temperature + ambient;
     }
   }
 }
@@ -200,7 +219,7 @@ static void writeOutputs() {
   Serial.println(updateBuffer);
 
   if(logging) {
-    logToSd(updateBuffer);
+    sd::log(updateBuffer);
   }
 }
   
@@ -297,8 +316,8 @@ void loop() {
 //  #endif
   }
   
-  if(userButtons.pending()) {
-    uint8_t button = userButtons.getPending();
+  if(Buttons::pending()) {
+    uint8_t button = Buttons::getPending();
     
     if(button == BUTTON_POWER) { // Disable power
       Serial.print("Powering off!");
@@ -371,6 +390,6 @@ void loop() {
 
 ISR(TIMER4_OVF_vect)        // interrupt service routine 
 {
-  userButtons.buttonTask();
+  Buttons::buttonTask();
 }
 

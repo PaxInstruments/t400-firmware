@@ -1,6 +1,8 @@
 #include "sd_log.h"
 #include "t400.h"
 
+namespace sd {
+
 SdCard card;     // The SD card
 Fat16 file;      // The logging file
 
@@ -16,10 +18,10 @@ void error_P(const char* str) {
   }
   
   // Stop the SD card
-  closeSd();
+  close();
 }
 
-void initSd(char* fileName) {
+void init(char* fileName) {
 
   // initialize the SD card
   if (!card.init()) {
@@ -76,16 +78,16 @@ void initSd(char* fileName) {
   }
 }
 
-void closeSd() {
+void close() {
   if(!file.isOpen()) {
     return;
   }
   
-  syncSd(true);
+  sync(true);
   file.close();
 }
 
-void logToSd(char* message) {
+void log(char* message) {
   if(!file.isOpen()) {
     return;
   }
@@ -94,10 +96,10 @@ void logToSd(char* message) {
   file.println(message);
 
   if (file.writeError) error("write data");
-  syncSd(false);
+  sync(false);
 }
 
-void syncSd(boolean force) {
+void sync(boolean force) {
   
   if(!file.isOpen()) {
     return;
@@ -112,3 +114,5 @@ void syncSd(boolean force) {
   syncTime = millis();
   if (!file.sync()) error("sync");
 }
+
+} // namespace sd

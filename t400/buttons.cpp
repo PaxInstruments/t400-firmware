@@ -1,6 +1,10 @@
 #include "buttons.h"
 #include "t400.h"
 
+namespace Buttons {
+
+uint8_t stuckButtonMask;
+uint8_t pendingButtons;
 
 
 const uint8_t buttonPins[BUTTON_COUNT] = {
@@ -12,7 +16,7 @@ const uint8_t buttonPins[BUTTON_COUNT] = {
   BUTTON_POWER_PIN,
 };
 
-void Buttons::setup() {
+void setup() {
   for(uint8_t b = 0; b < BUTTON_COUNT; b++) {
     pinMode(buttonPins[b], INPUT);
   }
@@ -24,7 +28,7 @@ void Buttons::setup() {
 uint8_t buttonDebounce = 0;
 
 // Scan for new button presses
-void Buttons::buttonTask() {
+void buttonTask() {
   
   for(uint8_t b = 0; b < BUTTON_COUNT; b++) {
     if(bitRead(stuckButtonMask, b)) {
@@ -42,12 +46,12 @@ void Buttons::buttonTask() {
 }
 
 
-bool Buttons::pending() {
+bool pending() {
   return (pendingButtons != 0);
 }
 
 // If a button was pressed, return it!
-uint8_t Buttons::getPending() {
+uint8_t getPending() {
   uint8_t button = BUTTON_COUNT;
   
   noInterrupts();
@@ -65,3 +69,5 @@ uint8_t Buttons::getPending() {
   return button;
 }
 
+
+} // namespace buttons
