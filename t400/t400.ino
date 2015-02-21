@@ -5,17 +5,17 @@
 Firmware for the Pax Instruments T400 temperature datalogger
 
 ## Setup
-1. Install the Arduino IDE from http://arduino.cc/en/Main/Software. Compiles under 1.0.6 and 1.5.8.
+1. Install the Arduino IDE from http://arduino.cc/en/Main/Software. Compiles under 1.6.0
 2. Install the following Arduino libraries.
   - U8Glib graphical LCD https://github.com/PaxInstruments/u8glib
   - MCP3424 ADC https://github.com/PaxInstruments/MCP3424
   - MCP980X temperature sensor https://github.com/PaxInstruments/MCP980X
   - DS3231 RTC https://github.com/PaxInstruments/ds3231
   - FAT16 SD card library https://github.com/PaxInstruments/Fat16 (use the FAT16 directory within this repository)
-3. Set the Arduino board to "LilyPad Arduino USB".
+3. Set the Arduino board to "LilyPad Arduino USB". (TODO: Use Pax Instruments board file instead for proper VID/PID & to disable LEDs)
 4. After pluggin in your T400 and turning it on ensure you have selected the correct serial port
 
-During compilation on OSX you may receive errors relating to `RobotControl()` in `ArduinoRobot.cpp`. This seems to be a problem in Arduino 1.0.5 and later. To work around this...
+Note for Arduino 1.0.5: During compilation on OSX you may receive errors relating to `RobotControl()` in `ArduinoRobot.cpp`. To work around this...
 
 1. Go into Applications>Arduino and right-click, "Show package contents"
 2. Go to Contents>Resources>Java>libraries
@@ -40,7 +40,7 @@ During compilation on OSX you may receive errors relating to `RobotControl()` in
 
 #define BUFF_MAX         80   // Size of the character buffer
 
-
+// Uncomment this to generate some fake temperature data, for testing the graphing functions.
 //#define FAKE_TEMPERATURES
 
 char fileName[] =        "LD0000.CSV";
@@ -58,14 +58,16 @@ double temperatures[SENSOR_COUNT];  // Current temperature of each thermocouple 
 double ambient =  0;        // Ambient temperature
 
 
-
 boolean backlightEnabled;
 
+
 unsigned long lastLogTime = 0;   // time data was logged
+
 #define LOG_INTERVAL_COUNT 6
 const uint8_t logIntervals[LOG_INTERVAL_COUNT] = {1, 2, 5, 10, 30, 60};  // Available log intervals, in seconds
 uint8_t logInterval    = 0;       // currently selected log interval
 boolean logging = false;          // True if we are currently logging to a file
+
 
 char updateBuffer[BUFF_MAX];      // Scratch buffer to write serial/sd output into
 struct ts rtcTime;                // Buffer to read RTC time into
@@ -77,8 +79,7 @@ void setup(void) {
   Serial.begin(9600);
   
   Wire.begin(); // Start using the Wire library; does the i2c communication.
-  TWBR = 24; // TWBR=12 sets the i2c SCK to 400 kHz on an 8 MHz clock. Comment out to run at 100 kHz
-  
+
   pinMode(BATTERY_STATUS_PIN, INPUT);
   
   setupBacklight();
@@ -87,17 +88,20 @@ void setup(void) {
   
   resetGraph();
   
-  #if DEBUG_LCD
-    u8g.setContrast(LCD_CONTRAST); // Set contrast level
-  #endif
+  u8g.setContrast(LCD_CONTRAST); // Set contrast level
   
   u8g.setRot180(); // Rotate screen
   u8g.setColorIndex(1); // Set color mode to binary
+  u8g.setFont(u8g_font_5x8r); // Select font. See https://code.google.com/p/u8glib/wiki/fontsize
 
   ADC1.begin();
 
   ambientSensor.begin();
   ambientSensor.writeConfig(ADC_RES_12BITS);
+  
+  // Note that this needs to be called after ambientSensor.begin(), because the working version of
+  // that library calls Wire.begin(), which resets this value.
+  TWBR = 12; // TWBR=12 sets the i2c SCK to 200 kHz on an 8 MHz clock. Comment out to run at 100 kHz
 
   // Set up the RTC
 //  DS3231_init(DS3231_INTCN);
@@ -158,12 +162,10 @@ static void readTemperatures() {
     temperature = GetTypKTemp(measuredVoltageMv*1000);
 
 #ifdef FAKE_TEMPERATURES
-    if(channel == 0) {
-      temperature  = 0 + count;
-    }
+    temperature  = channel*20 + count - ambient;
     
     count +=.5;
-    if(count > 50) {
+    if(count > 10) {
       count = 0;
     }
 #endif
@@ -263,17 +265,19 @@ void loop() {
         needsRefresh = true;
       }
     }
+    else if(button == BUTTON_D) { // Sensor display mode
+      if(!logging) {
+        // TODO
+        needsRefresh = true;
+      }
+    }
     else if(button == BUTTON_E) { // Toggle backlight
       backlightEnabled = !backlightEnabled;
       setBacklight(!backlightEnabled);
     }
   }
   
-  if(needsRefresh) {
-//    uint16_t BATT_STAT_state = digitalRead(BATTERY_STATUS_PIN);
-//    DEBUG_PRINT("Battery full = ");
-//    DEBUG_PRINTLN(BATT_STAT_state);
-    
+  if(needsRefresh) {    
     if(logging) {
       draw(u8g,
         temperatures, 
