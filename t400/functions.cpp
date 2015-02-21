@@ -8,8 +8,6 @@
 #include "t400.h"
 #include "functions.h"
 
-
-
 //// Graph data
 int8_t graph[MAXIMUM_GRAPH_POINTS][SENSOR_COUNT]={}; // Array to hold graph data
 uint8_t graphCurrentPoint;                           // Index of latest point added to the graph (0,MAXIMUM_GRAPH_POINTS]
@@ -17,14 +15,15 @@ uint8_t graphPoints;                                 // Number of valid points t
 
 #define graphPoint(point, sensor) (graph[(point + graphCurrentPoint)%MAXIMUM_GRAPH_POINTS][sensor])
 
-int16_t graphMin;
-int16_t graphStep;
-int8_t graphScale;    // Number of degrees per dot in the graph[] array.
-
+int16_t graphMin;      // Value of the minimum tick mark
+int16_t graphStep;     // Number of degrees per tick mark in the graph
+int8_t graphScale;     // Number of degrees per dot in the graph[] array.
+uint8_t axisDigits;    // Number of digits to display in the axis labels (ex: '80' -> 2, '1000' -> 4, '-999' -> 4)
 
 void resetGraph() {
   graphCurrentPoint = 0;
-  graphPoints = 0;
+//  graphPoints = 0;
+  graphPoints = MAXIMUM_GRAPH_POINTS;  // TODO: just for testing the graph display
   
   graphMin = 0;
   graphStep = 20;
@@ -82,6 +81,16 @@ void updateGraph(double* temperatures) {
 //    
 //    graphScale = newGraphScale;
 //  }
+
+  // Calculate the number of axes digits to display
+  if((graphMin < 0) | (graphMin + graphStep*4 > 99)) {
+    // 3 digit display
+    axisDigits = 3;
+  }
+  else {
+    // 2 digit display
+    axisDigits = 2;
+  }
 }
 
 
@@ -93,47 +102,37 @@ void draw(
   char* fileName,
   uint8_t logInterval
   ) {
-    
-  u8g.setFont(u8g_font_5x8); // Select font. See https://code.google.com/p/u8glib/wiki/fontsize
+
+  // Graphic commands to redraw the complete screen should be placed here
+  static char buf[8];
     
   uint8_t page = 0;
   u8g.firstPage();  // Update the screen
   do {
-    
-    // Graphic commands to redraw the complete screen should be placed here
-    static char buf[8];
-
     //// Draw temperature graph
     if (page < 6) {
-      u8g.drawLine( 0, 16, 132,  16);    // hline between status bar and graph
-      
-      if((graphMin < 0) | (graphMin + graphStep*5 > 99)) {
-        // 3 digit display
-        u8g.drawLine(15, 64,  15,  18);    // Vertical axis
+      if(page == 5) {
+        u8g.drawLine( 0, 16, 132,  16);    // hline between status bar and graph
       }
-      else {
-        // 2 digit display
-        u8g.drawLine(12, 64,  12,  18);    // Vertical axis        
+      
+      // Draw the separator line between axes labels and legend
+      if(axisDigits == 2) {
+        u8g.drawLine(12, DISPLAY_HEIGHT,  12,  18);    
+      } else {
+        u8g.drawLine(15, DISPLAY_HEIGHT,  15,  18);
       }
     
-      // TODO: prerender these strings?
+      // Draw axis labels and marks
       for(uint8_t i = 0; i < GRAPH_INTERVALS; i++) {
         u8g.drawPixel(11,61 - i*10);
-        if((graphMin < 0) | (graphMin + graphStep*5 > 99)) {
-          // 3 digit display
-          u8g.drawStr(0, 64 - i*10, dtostrf(graphMin + graphStep*i,3,0,buf));
-        }
-        else {
-          // 2 digit display
-          u8g.drawStr(0, 64 - i*10, dtostrf(graphMin + graphStep*i,2,0,buf));
-        }
+
+        u8g.drawStr(0, DISPLAY_HEIGHT - i*10,  dtostrf(graphMin + graphStep*i,axisDigits,0,buf));
       }
 
       // Draw labels on the right side of graph
       // TODO:scale these correctly?
       for(uint8_t sensor=0; sensor<4; sensor++){
-        const uint8_t yDisplaySize = 64;
-        const uint8_t yOffset = yDisplaySize - 3;
+        const uint8_t yOffset = DISPLAY_HEIGHT - 3;
         
         u8g.drawStr(113+5*sensor, yOffset - graphPoint(0, sensor) + 3, dtostrf(sensor+1,1,0,buf));
       };
@@ -150,18 +149,29 @@ void draw(
         }
       }
       
+
+//      digitalWrite(LCD_BACKLIGHT_PIN, HIGH);
+
+      // Note: Use pointer arithmatic here to improve speed by 25%
+      int8_t* starting_point = graph[graphCurrentPoint];    // Starting address of the graph data
+      int8_t* wrap_point = graph[MAXIMUM_GRAPH_POINTS];     // If the address pointer reaches this, reset it to graph[0][0]
+
+      const uint8_t yOffset = DISPLAY_HEIGHT - 3;
+
       for(uint8_t point = 0; point < lastPoint; point++){
-        const uint8_t  x = MAXIMUM_GRAPH_POINTS-point+12;
-        
-        const uint8_t yDisplaySize = 64;
-        const uint8_t yOffset = yDisplaySize - 3;
         
         for(uint8_t sensor = 0; sensor < 4; sensor++) {
-          if(graphPoint(point, sensor) != GRAPH_INVALID) {
-            u8g.drawPixel(x, yOffset - graphPoint(point,sensor));
-          }
+          u8g.drawPixel(MAXIMUM_GRAPH_POINTS+12-point,
+                        yOffset - *(starting_point++));
+        }
+        
+        if(starting_point == wrap_point) {
+          starting_point = graph[0];
         }
       };
+      
+//      digitalWrite(LCD_BACKLIGHT_PIN, LOW);
+      
     }
 
     //// Draw status bar
