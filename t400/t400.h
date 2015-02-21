@@ -13,6 +13,13 @@
 #define MAXIMUM_GRAPH_POINTS    100
 
 #define DISPLAY_HEIGHT  64    // Height of the display
+#define CHARACTER_SPACING 5     // Width of a character+space to next character
+
+#define TEMPERATURE_UNITS_C  0
+#define TEMPERATURE_UNITS_F  1
+#define TEMPERATURE_UNITS_K  2
+#define TEMPERATURE_UNITS_COUNT 3
+
 
 /// I2C addresses
 #define MCP3424_ADDR    0x69

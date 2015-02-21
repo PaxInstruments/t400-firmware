@@ -22,8 +22,8 @@ uint8_t axisDigits;    // Number of digits to display in the axis labels (ex: '8
 
 void resetGraph() {
   graphCurrentPoint = 0;
-//  graphPoints = 0;
-  graphPoints = MAXIMUM_GRAPH_POINTS;  // TODO: just for testing the graph display
+  graphPoints = 0;
+//  graphPoints = MAXIMUM_GRAPH_POINTS;  // TODO: just for testing the graph display
   
   graphMin = 0;
   graphStep = 20;
@@ -83,25 +83,26 @@ void updateGraph(double* temperatures) {
 //  }
 
   // Calculate the number of axes digits to display
-  if((graphMin < 0) | (graphMin + graphStep*4 > 99)) {
-    // 3 digit display
+  if(graphMin + graphStep*4 > 999) {
+    axisDigits = 4;
+  }
+  else if(graphMin + graphStep*4 > 99) {
     axisDigits = 3;
   }
   else {
-    // 2 digit display
     axisDigits = 2;
   }
 }
-
-
 
 void draw(
   U8GLIB_PI13264& u8g,
   double* temperatures,
   double ambient,
+  uint8_t temperatureUnit,
   char* fileName,
   uint8_t logInterval
   ) {
+//  digitalWrite(LCD_BACKLIGHT_PIN, HIGH);
 
   // Graphic commands to redraw the complete screen should be placed here
   static char buf[8];
@@ -116,41 +117,32 @@ void draw(
       }
       
       // Draw the separator line between axes labels and legend
-      if(axisDigits == 2) {
-        u8g.drawLine(12, DISPLAY_HEIGHT,  12,  18);    
-      } else {
-        u8g.drawLine(15, DISPLAY_HEIGHT,  15,  18);
-      }
+      u8g.drawLine(CHARACTER_SPACING*axisDigits + 2, DISPLAY_HEIGHT,
+                   CHARACTER_SPACING*axisDigits + 2, 18);
     
       // Draw axis labels and marks
-      for(uint8_t i = 0; i < GRAPH_INTERVALS; i++) {
-        u8g.drawPixel(11,61 - i*10);
+      for(uint8_t interval = 0; interval < GRAPH_INTERVALS; interval++) {
+        u8g.drawPixel(CHARACTER_SPACING*axisDigits + 1, 61 - interval*10);
 
-        u8g.drawStr(0, DISPLAY_HEIGHT - i*10,  dtostrf(graphMin + graphStep*i,axisDigits,0,buf));
+        u8g.drawStr(0, DISPLAY_HEIGHT - interval*10,  dtostrf(graphMin + graphStep*interval,axisDigits,0,buf));
       }
 
       // Draw labels on the right side of graph
       // TODO:scale these correctly?
       for(uint8_t sensor=0; sensor<4; sensor++){
-        const uint8_t yOffset = DISPLAY_HEIGHT - 3;
         
-        u8g.drawStr(113+5*sensor, yOffset - graphPoint(0, sensor) + 3, dtostrf(sensor+1,1,0,buf));
+        u8g.drawStr(113+5*sensor, DISPLAY_HEIGHT - graphPoint(0, sensor), dtostrf(sensor+1,1,0,buf));
       };
       
       // Display data from graph[][] array to the graph on screen
       
+      // Calculate how many graph points to display.
       uint8_t lastPoint = graphPoints;
       
-      // On a 3 digit display, skip the last n points since they would be under the label
-      if((graphMin < 0) | (graphMin + graphStep*5 > 99)) {
-        // 3 digit display
-        if(lastPoint > MAXIMUM_GRAPH_POINTS - 3) {
-          lastPoint = MAXIMUM_GRAPH_POINTS - 3;
-        }
+      // If the axis indicies are >2 character length, scale back the graph.
+      if(lastPoint > MAXIMUM_GRAPH_POINTS - (axisDigits - 2)*5) {
+        lastPoint = MAXIMUM_GRAPH_POINTS - (axisDigits - 2)*5;
       }
-      
-
-//      digitalWrite(LCD_BACKLIGHT_PIN, HIGH);
 
       // Note: Use pointer arithmatic here to improve speed by 25%
       int8_t* starting_point = graph[graphCurrentPoint];    // Starting address of the graph data
@@ -168,17 +160,23 @@ void draw(
         if(starting_point == wrap_point) {
           starting_point = graph[0];
         }
-      };
-      
-//      digitalWrite(LCD_BACKLIGHT_PIN, LOW);
-      
+      };      
     }
 
     //// Draw status bar
     else if(page == 6) {  
       u8g.drawStr(0,  15, dtostrf(ambient,5,1,buf));         // Ambient temperature
-      u8g.drawStr(25, 15, "C");
-    
+      
+      if(temperatureUnit == TEMPERATURE_UNITS_C) {
+        u8g.drawStr(25, 15, "C");
+      }
+      else if(temperatureUnit == TEMPERATURE_UNITS_F) {
+        u8g.drawStr(25, 15, "F");
+      }
+      else {
+        u8g.drawStr(25, 15, "K");
+      }
+      
       u8g.drawStr(35, 15,fileName);                          // File name
     
       u8g.drawStr( 95, 15, dtostrf(logInterval,2,0,buf));    // Interval
@@ -207,6 +205,7 @@ void draw(
         {65,  0,  65,   7}, // vline between TC2 and TC3
         {99,  0,  99,   7}, // vline between TC3 and TC4
       };
+
       for (uint8_t i = 0; i < LINE_COUNT; i++) {
         const uint8_t* pos = lines[i];
         u8g.drawLine(pos[0], pos[1], pos[2], pos[3]);
@@ -227,6 +226,7 @@ void draw(
   } 
   
   while( u8g.nextPage() );
+//  digitalWrite(LCD_BACKLIGHT_PIN, LOW);
 }
 
 

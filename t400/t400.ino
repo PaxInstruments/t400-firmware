@@ -57,9 +57,7 @@ const uint8_t temperatureChannels[SENSOR_COUNT] = {1, 0, 3, 2};  // Map of ADC i
 double temperatures[SENSOR_COUNT];  // Current temperature of each thermocouple input
 double ambient =  0;        // Ambient temperature
 
-
 boolean backlightEnabled;
-
 
 unsigned long lastLogTime = 0;   // time data was logged
 
@@ -71,6 +69,31 @@ boolean logging = false;          // True if we are currently logging to a file
 
 char updateBuffer[BUFF_MAX];      // Scratch buffer to write serial/sd output into
 struct ts rtcTime;                // Buffer to read RTC time into
+
+uint8_t temperatureUnit;          // Measurement unit for temperature
+
+void rotateTemperatureUnit() {
+  // Rotate the unit
+  temperatureUnit = (temperatureUnit + 1) % TEMPERATURE_UNITS_COUNT;
+
+  // Reset the graph so we don't have to worry about scaling it
+  resetGraph();
+  
+  // TODO: Convert the current data to new units?
+}
+
+// Convert temperature from celcius to the new unit
+double convertTemperature(double Celcius) {
+  if(temperatureUnit == TEMPERATURE_UNITS_C) {
+    return Celcius;
+  }
+  else if(temperatureUnit == TEMPERATURE_UNITS_K) {
+    return Celcius + 273.15;
+  }
+  else {
+    return 9.0/5.0*Celcius+32;
+  }
+}
 
 // This function runs once. Use it for setting up the program state.
 void setup(void) {
@@ -145,6 +168,8 @@ static void readTemperatures() {
   double measuredVoltageMv;
   double temperature;
   
+  ambient = ambientSensor.readTempC16(AMBIENT) / 16.0;  // Read ambient temperature in C
+  
 #ifdef FAKE_TEMPERATURES
   static double count = 0;
 #endif
@@ -174,9 +199,12 @@ static void readTemperatures() {
       temperatures[channel] = OUT_OF_RANGE;
     }
     else {
-      temperatures[channel] = temperature + ambient;
+      temperatures[channel] = convertTemperature(temperature + ambient);
     }
   }
+  
+  // Finally, convert ambient to display units
+  ambient = convertTemperature(ambient);
 }
 
 static void writeOutputs() {
@@ -202,8 +230,6 @@ static void writeOutputs() {
   
 static void updateData() {
   DS3231_get(&rtcTime);
-
-  ambient = ambientSensor.readTempC16(AMBIENT) / 16.0;
   
   readTemperatures();
   
@@ -261,7 +287,7 @@ void loop() {
     }
     else if(button == BUTTON_C) { // Cycle temperature units
       if(!logging) {
-        // TODO
+        rotateTemperatureUnit();
         needsRefresh = true;
       }
     }
@@ -280,8 +306,9 @@ void loop() {
   if(needsRefresh) {    
     if(logging) {
       draw(u8g,
-        temperatures, 
+        temperatures,
         ambient,
+        temperatureUnit,
         fileName,
         logIntervals[logInterval]
       );
@@ -290,6 +317,7 @@ void loop() {
       draw(u8g,
         temperatures, 
         ambient,
+        temperatureUnit,
         "Not logging",
         logIntervals[logInterval]
       );

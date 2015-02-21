@@ -19,6 +19,7 @@ extern void draw(
   U8GLIB_PI13264& u8g,
   double* temperatures,
   double ambient,
+  uint8_t temperatureUnit,
   char* fileName,
   uint8_t logInterval
   );
