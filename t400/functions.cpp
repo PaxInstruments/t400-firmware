@@ -247,6 +247,7 @@ double GetTypKTemp(double microVolts){
 
   double LookedupValue;
   
+  // TODO: Binary search here to decrease lookup time
   for(uint16_t i = 0; i<TEMP_TYPE_K_LENGTH; i++){
     int32_t valueLow = pgm_read_dword(tempTypK + i);
     int32_t valueHigh = pgm_read_dword(tempTypK + i + 1);

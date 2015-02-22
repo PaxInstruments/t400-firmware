@@ -5,26 +5,25 @@
 Firmware for the Pax Instruments T400 temperature datalogger
 
 ## Setup
-1. Install the Arduino IDE from http://arduino.cc/en/Main/Software. Compiles under 1.6.0
+1. Install the Arduino IDE from http://arduino.cc/en/Main/Software. Use version 1.6
 2. Install the following Arduino libraries.
   - U8Glib graphical LCD https://github.com/PaxInstruments/u8glib
   - MCP3424 ADC https://github.com/PaxInstruments/MCP3424
   - MCP980X temperature sensor https://github.com/PaxInstruments/MCP980X
   - DS3231 RTC https://github.com/PaxInstruments/ds3231
   - FAT16 SD card library https://github.com/PaxInstruments/Fat16 (use the FAT16 directory within this repository)
-3. Set the Arduino board to "LilyPad Arduino USB". (TODO: Use Pax Instruments board file instead for proper VID/PID & to disable LEDs)
-4. After pluggin in your T400 and turning it on ensure you have selected the correct serial port
+3. Install the Pax Instruments hardware core (unzip it and move it to the hardware/ directory in your Sketches folder):
+  - https://github.com/PaxInstruments/ATmega32U4-bootloader
+4. Restart Arduino if it was already running
+5. In tools->board, set the Arduino board to "Pax Instruments T400".
+6. In tools->port, select the serial port corresponding to the T400 (Arduino should identify it correctly)
+7. Hold down the power button on the device, then upload the firmware.
 
-Note for Arduino 1.0.5: During compilation on OSX you may receive errors relating to `RobotControl()` in `ArduinoRobot.cpp`. To work around this...
-
-1. Go into Applications>Arduino and right-click, "Show package contents"
-2. Go to Contents>Resources>Java>libraries
-3. Delete the folder "Robot_Control"
- */
+*/
 
 // Import libraries
-#include "U8glib.h"     // LCD
 #include <Wire.h>       // i2c
+#include "U8glib.h"     // LCD
 #include <MCP3424.h>    // ADC
 #include <MCP980X.h>    // Ambient/junction temperature sensor
 #include <ds3231.h>     // RTC
@@ -57,17 +56,18 @@ const uint8_t temperatureChannels[SENSOR_COUNT] = {1, 0, 3, 2};  // Map of ADC i
 double temperatures[SENSOR_COUNT];  // Current temperature of each thermocouple input
 double ambient =  0;        // Ambient temperature
 
+
 boolean backlightEnabled;
 
-unsigned long lastLogTime = 0;   // time data was logged
+
 
 #define LOG_INTERVAL_COUNT 6
 const uint8_t logIntervals[LOG_INTERVAL_COUNT] = {1, 2, 5, 10, 30, 60};  // Available log intervals, in seconds
 uint8_t logInterval    = 0;       // currently selected log interval
+unsigned long lastLogTime = 0;   // time data was logged
 boolean logging = false;          // True if we are currently logging to a file
 
 
-char updateBuffer[BUFF_MAX];      // Scratch buffer to write serial/sd output into
 struct ts rtcTime;                // Buffer to read RTC time into
 
 uint8_t temperatureUnit;          // Measurement unit for temperature
@@ -208,9 +208,18 @@ static void readTemperatures() {
 }
 
 static void writeOutputs() {
-  snprintf(updateBuffer, BUFF_MAX, "%02d:%02d:%02d, ", rtcTime.hour, rtcTime.min, rtcTime.sec);
-  dtostrf(ambient, 1, 2, updateBuffer+strlen(updateBuffer));
-    
+  static char updateBuffer[BUFF_MAX];      // Scratch buffer to write serial/sd output into
+ 
+  // Avoid snprintf() to save 1.4k space 
+//  snprintf(updateBuffer, BUFF_MAX, "%02d:%02d:%02d, ", rtcTime.hour, rtcTime.min, rtcTime.sec);
+  dtostrf(rtcTime.hour, 2, 0, updateBuffer + 0);
+  dtostrf(rtcTime.min,  2, 0, updateBuffer + 3);
+  dtostrf(rtcTime.sec,  2, 0, updateBuffer + 6);
+  dtostrf(ambient,      1, 2, updateBuffer + 10);
+  updateBuffer[2] = updateBuffer[5] = ':';
+  updateBuffer[8] = ',';
+  updateBuffer[9] = ' ';
+ 
   for(uint8_t i = 0; i < SENSOR_COUNT; i++) {
     if(temperatures[i] == OUT_OF_RANGE) {
       strcpy(updateBuffer+strlen(updateBuffer), ", -");
