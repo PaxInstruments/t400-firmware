@@ -11,7 +11,7 @@ Firmware for the Pax Instruments T400 temperature datalogger
   - MCP3424 ADC https://github.com/PaxInstruments/MCP3424
   - MCP980X temperature sensor https://github.com/PaxInstruments/MCP980X
   - DS3231 RTC https://github.com/PaxInstruments/ds3231
-  - SdFat library https://github.com/greiman/SdFat (use the SdFat directory within this repository)
+  - SdFat library https://github.com/PaxInstruments/SdFat (use the SdFat directory within this repository)
 3. Install the Pax Instruments hardware core (unzip it and move it to the hardware/ directory in your Sketches folder):
   - https://github.com/PaxInstruments/ATmega32U4-bootloader
 4. Restart Arduino if it was already running
