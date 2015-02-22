@@ -1,7 +1,12 @@
 #ifndef TYPEK_CONSTANT_H
 #define TYPEK_CONSTANT_H
 
-//Lookup Table for the TypK:
+// Macro for accessing thermocouple data
+#define lookupThermocouleData(index) (pgm_read_dword(tempTypK + index))
+// Note: if switching to eeprom, could look like this instead:
+//  #define lookupThermocouleData(index) (eeprom_read_dword(index));
+
+// Lookup Table for the TypK:
 // From -270 to 1350°C in steps of 10°C, the list is in µV according to that Temp.
 // If changing the lower limit remember to change it in GetTypKTemp().
 #define TEMP_TYPE_K_LENGTH 101

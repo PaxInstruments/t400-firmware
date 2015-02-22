@@ -240,17 +240,20 @@ double GetTypKTemp(double microVolts){
   
   // Check if it's out of range
   // TODO: Read this once.
-  int32_t maxConversion = pgm_read_dword(tempTypK + TEMP_TYPE_K_LENGTH - 1);
-  if(microVolts > maxConversion || microVolts < tempTypK[0]){
+  // TODO: Why does minConversion not work?
+  double maxConversion = lookupThermocouleData(TEMP_TYPE_K_LENGTH - 1);
+  double minConversion = lookupThermocouleData(0);
+  
+  if(microVolts > maxConversion || microVolts < 0){
     return OUT_OF_RANGE;
   }
-
+  
   double LookedupValue;
   
   // TODO: Binary search here to decrease lookup time
   for(uint16_t i = 0; i<TEMP_TYPE_K_LENGTH; i++){
-    int32_t valueLow = pgm_read_dword(tempTypK + i);
-    int32_t valueHigh = pgm_read_dword(tempTypK + i + 1);
+    int32_t valueLow = lookupThermocouleData(i);
+    int32_t valueHigh = lookupThermocouleData(i + 1);
     
     if(microVolts >= valueLow && microVolts <= valueHigh){
       LookedupValue = ((double)-270 + (i)*10) + ((10 *(microVolts - valueLow)) / ((valueHigh - valueLow)));
