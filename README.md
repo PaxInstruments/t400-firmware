@@ -4,7 +4,7 @@
 Firmware for the Pax Instruments T400 temperature datalogger
 
 ## Setup
-1. Install the Arduino IDE from http://arduino.cc/en/Main/Software. Compiles under 1.0.6 and 1.5.8.
+1. Install the Arduino IDE from http://arduino.cc/en/Main/Software. This code is developed using Arcuino IDE 1.6, but may work under versions 1.0.6 and 1.5.8.
 2. Install the following Arduino libraries.
   - U8Glib graphical LCD https://github.com/PaxInstruments/u8glib
   - MCP3424 ADC https://github.com/PaxInstruments/MCP3424
@@ -14,7 +14,8 @@ Firmware for the Pax Instruments T400 temperature datalogger
   - SPI flash https://github.com/PaxInstruments/SPIFlash
 3. Set the Arduino board to "LilyPad Arduino USB".
 4. Flash the T400 with the Pax Instruments bootloader at https://github.com/PaxInstruments/pi32u4_boards (requires extra steps)
-4. After pluggin in your T400 and turning it on ensure you have selected the correct serial port
+4. Plug in your T400 and turn it on
+5. Select the serial port corresponding to your T400
 
 During compilation on OSX you may receive errors relating to `RobotControl()` in `ArduinoRobot.cpp`. This seems to be a problem in Arduino 1.0.5 and later. To work around this...
 
