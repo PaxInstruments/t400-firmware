@@ -1,8 +1,7 @@
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
 
-#include <Fat16.h> // FAT16 CD card library
-#include <Fat16util.h>
+#include <Arduino.h>
 #include "U8glib.h" // LCD
 #include "typek_constant.h"
 #include "t400.h"
@@ -244,7 +243,7 @@ double GetTypKTemp(double microVolts){
   double maxConversion = lookupThermocouleData(TEMP_TYPE_K_LENGTH - 1);
   double minConversion = lookupThermocouleData(0);
   
-  if(microVolts > maxConversion || microVolts < 0){
+  if(microVolts > maxConversion || microVolts < -200){
     return OUT_OF_RANGE;
   }
   

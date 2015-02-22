@@ -11,7 +11,7 @@ Firmware for the Pax Instruments T400 temperature datalogger
   - MCP3424 ADC https://github.com/PaxInstruments/MCP3424
   - MCP980X temperature sensor https://github.com/PaxInstruments/MCP980X
   - DS3231 RTC https://github.com/PaxInstruments/ds3231
-  - FAT16 SD card library https://github.com/PaxInstruments/Fat16 (use the FAT16 directory within this repository)
+  - SdFat library https://github.com/greiman/SdFat (use the SdFat directory within this repository)
 3. Install the Pax Instruments hardware core (unzip it and move it to the hardware/ directory in your Sketches folder):
   - https://github.com/PaxInstruments/ATmega32U4-bootloader
 4. Restart Arduino if it was already running
@@ -23,12 +23,13 @@ Firmware for the Pax Instruments T400 temperature datalogger
 
 // Import libraries
 #include <Wire.h>       // i2c
+#include <SPI.h>
+#include <SdFat.h>
+
 #include "U8glib.h"     // LCD
 #include <MCP3424.h>    // ADC
 #include <MCP980X.h>    // Ambient/junction temperature sensor
 #include <ds3231.h>     // RTC
-#include <Fat16.h>      // FAT16 SD card library
-#include <Fat16util.h>
 
 #include "power.h"            // Manage board power
 #include "buttons.h"          // User buttons
@@ -58,7 +59,6 @@ double ambient =  0;        // Ambient temperature
 
 
 boolean backlightEnabled;
-
 
 
 #define LOG_INTERVAL_COUNT 6
@@ -124,7 +124,10 @@ void setup(void) {
   
   // Note that this needs to be called after ambientSensor.begin(), because the working version of
   // that library calls Wire.begin(), which resets this value.
-  TWBR = 12; // TWBR=12 sets the i2c SCK to 200 kHz on an 8 MHz clock. Comment out to run at 100 kHz
+  // Note: SD card can't support a higher datarate!
+//  TWBR = 12; // TWBR=12 sets the i2c SCK to 200 kHz on an 8 MHz clock. Comment out to run at 100 kHz
+
+  sd::init();
 
   // Set up the RTC
 //  DS3231_init(DS3231_INTCN);
@@ -152,7 +155,7 @@ void startLogging() {
   }
   
   logging = true;
-  sd::init(fileName);
+  sd::open(fileName);
 }
 
 void stopLogging() {
