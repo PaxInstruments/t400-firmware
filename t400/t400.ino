@@ -314,6 +314,8 @@ void loop() {
       setBacklight(!backlightEnabled);
     }
   }
+
+  needsRefresh = true;  //todo delete me
   
   if(needsRefresh) {    
     if(logging) {

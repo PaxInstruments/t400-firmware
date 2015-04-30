@@ -21,8 +21,9 @@ void setup() {
     pinMode(buttonPins[b], INPUT);
   }
 
-  stuckButtonMask = bitSet(stuckButtonMask,BUTTON_POWER_PIN);
-  pendingButtons = 0;
+  // If the power button was held down during boot, ignore it.
+  // stuckButtonMask = bitSet(stuckButtonMask,BUTTON_POWER_PIN);
+  // pendingButtons = 0;
 }
 
 uint8_t buttonDebounce = 0;

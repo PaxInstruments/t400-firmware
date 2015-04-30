@@ -24,33 +24,36 @@
 /// I2C addresses
 #define MCP3424_ADDR    0x69
 
-// Pin definitions for Electronics version 0.9
-#define pcbVersion ".10" // Electronics version 0.9 milestone.
+// Pin definitions for Electronics version 0.12
+#define pcbVersion ".12" // Electronics version 0.12 milestone.
+
 // Pin definitions
 #define BUTTON_B_PIN         0
 #define BUTTON_A_PIN         1
 // SDA                       2
 // SCL                       3
-#define LCD_A0               4
-#define BATTERY_STATUS_PIN   5    // Battery status pin
-#define LCD_BACKLIGHT_PIN    6    // LCD backlight on pin
-// RTC_INT                   7
-#define LCD_CS               8
-// VBAT_SENSE                9
-#define BATTERY_VBAT_PIN    10    // Battery voltage pin (analog input)
-// FLASH_CS                 11
-#define LCD_RST             12
-#define BUTTON_C_PIN        13
+// VBAT_EN                      4  // Enable VBAT_SENSE
+#define SD_CS                5
+#define BATTERY_STATUS_PIN   6    // Battery status pin (A7)
+// RTC_INT                      7
+#define BUTTON_C_PIN         8
+#define BUTTON_D_PIN         9
+#define BUTTON_E_PIN        10
+#define PWR_ONOFF_PIN       11   // Power on/off pin turns board power off (active high)
+// #define VBAT_SENSE          A10  // Battery voltage /2 (D12)
+// #define FLASH_CS            13
 // MISO                     14
 // SCK                      15
 // MOSI                     16
-#define SD_CS               17
+#define BUTTON_POWER_PIN    0//17  // TODO
+
 // DATA2                    A0
 #define DATA1               A1
-#define BUTTON_D_PIN        A2
-#define BUTTON_E_PIN        A3
-#define BUTTON_POWER_PIN    A4
-#define PWR_ONOFF_PIN       A5    // Power on/off pin turns board power off (active low)
+#define LCD_A0              A2
+#define LCD_RST             A3
+#define LCD_CS              A4
+#define LCD_BACKLIGHT_PIN   A5   // LCD backlight on pin
+
 
 
 #define LCD_CONTRAST     0x018*7  // Sets the LCD contrast
