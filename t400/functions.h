@@ -15,6 +15,17 @@ extern void updateGraph(double* temperatures);
 // @return Temperature, in ???
 extern double GetTypKTemp(double microVolts);
 
+enum batteryStatus {
+  NO_BATTERY,
+  CHARGING,
+  CHARGED,
+  DISCHARGING
+};
+
+// Get the battery status
+// @return 
+extern batteryStatus getBatteryStatus();
+
 extern void draw(
   U8GLIB_PI13264& u8g,
   double* temperatures,
@@ -31,10 +42,10 @@ inline void setupBacklight() {
   
 inline void setBacklight(uint8_t level) {
   if(level > 0) {
-    digitalWrite(LCD_BACKLIGHT_PIN, HIGH);
+    digitalWrite(LCD_BACKLIGHT_PIN, LOW);
   }
   else {
-    digitalWrite(LCD_BACKLIGHT_PIN, LOW);
+    digitalWrite(LCD_BACKLIGHT_PIN, HIGH);
   }
 }  
 

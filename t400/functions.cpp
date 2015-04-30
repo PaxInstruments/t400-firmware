@@ -1,11 +1,13 @@
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
+#include <avr/io.h>
 
 #include <Arduino.h>
 #include "U8glib.h" // LCD
 #include "typek_constant.h"
 #include "t400.h"
 #include "functions.h"
+
 
 //// Graph data
 int8_t graph[MAXIMUM_GRAPH_POINTS][SENSOR_COUNT]={}; // Array to hold graph data
@@ -101,11 +103,10 @@ void draw(
   char* fileName,
   uint8_t logInterval
   ) {
-//  digitalWrite(LCD_BACKLIGHT_PIN, HIGH);
 
   // Graphic commands to redraw the complete screen should be placed here
   static char buf[8];
-    
+
   uint8_t page = 0;
   u8g.firstPage();  // Update the screen
   do {
@@ -225,9 +226,35 @@ void draw(
   } 
   
   while( u8g.nextPage() );
-//  digitalWrite(LCD_BACKLIGHT_PIN, LOW);
 }
 
+// TODO: TEST
+batteryStatus getBatteryStatus() {
+  // We want to output one of these states:
+  // DISCHARGING     // VBUS=0
+  // CHARGING,       // VBUS=1, BATT_STAT=0
+  // CHARGED,        // VBUS=1, BATT_STAT=1, VBATT_SENSE=?
+  // NO_BATTERY,     // VBUS=1, BATT_STAT=1, VBATT_SENSE=?
+
+
+  // register USBSTA - bit 0 - VBUS
+  bool VBUS_STAT = USBSTA & (1<<VBUS) == 0x01;
+  bool STAT = digitalRead(BATT_STAT) == HIGH;
+  uint8_t VBATT = analogRead(VBAT_SENSE);
+
+  if(!VBUS_STAT) {
+    return DISCHARGING;
+  }
+  else if(!STAT) {
+    return CHARGING;
+  }
+  else if(VBATT < 100) {
+    return NO_BATTERY;
+  }
+  else {
+    return CHARGED;
+  }
+}
 
 double GetTypKTemp(double microVolts){
   // Converts the thermocouple µV reading into some usable °C

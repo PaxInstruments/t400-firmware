@@ -2,14 +2,20 @@
 #include "power.h"
 #include "t400.h"
 #include "U8glib.h" // LCD
+#include "functions.h"
 
 void powerOn() {
   // Turn the power selector on so the board stays on!
-  pinMode(PWR_ONOFF_PIN, OUTPUT);
-  digitalWrite(PWR_ONOFF_PIN, LOW);
+  // Note: This is done in the bootloader.
+  
+//  digitalWrite(PWR_ONOFF_PIN, LOW);
+//  pinMode(PWR_ONOFF_PIN, OUTPUT);
 }
 
 void powerOff(U8GLIB_PI13264& u8g) {
+
+  // Disable the backlight
+  setBacklight(0);
 
   // Clear the screen
   u8g.firstPage();  
@@ -23,5 +29,5 @@ void powerOff(U8GLIB_PI13264& u8g) {
   delay(200);
   
   //Then turn off the power
-  pinMode(PWR_ONOFF_PIN, INPUT);
+  digitalWrite(PWR_ONOFF_PIN, HIGH);
 }

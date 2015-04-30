@@ -17,6 +17,7 @@ const uint8_t buttonPins[BUTTON_COUNT] = {
 };
 
 void setup() {
+
   for(uint8_t b = 0; b < BUTTON_COUNT; b++) {
     pinMode(buttonPins[b], INPUT);
   }

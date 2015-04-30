@@ -32,20 +32,20 @@
 #define BUTTON_A_PIN         1
 // SDA                       2
 // SCL                       3
-// VBAT_EN                      4  // Enable VBAT_SENSE
+#define VBAT_EN              4  // Enable VBAT_SENSE
 #define SD_CS                5
-#define BATTERY_STATUS_PIN   6    // Battery status pin (A7)
+#define BATT_STAT            6    // Battery status pin (A7)
 // RTC_INT                      7
 #define BUTTON_C_PIN         8
 #define BUTTON_D_PIN         9
 #define BUTTON_E_PIN        10
 #define PWR_ONOFF_PIN       11   // Power on/off pin turns board power off (active high)
-// #define VBAT_SENSE          A10  // Battery voltage /2 (D12)
+#define VBAT_SENSE          A10  // Battery voltage /2 (D12)
 // #define FLASH_CS            13
 // MISO                     14
 // SCK                      15
 // MOSI                     16
-#define BUTTON_POWER_PIN    0//17  // TODO
+#define BUTTON_POWER_PIN    0// 17  // TODO
 
 // DATA2                    A0
 #define DATA1               A1

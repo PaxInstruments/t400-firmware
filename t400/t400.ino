@@ -41,7 +41,7 @@ Firmware for the Pax Instruments T400 temperature datalogger
 #define BUFF_MAX         80   // Size of the character buffer
 
 // Uncomment this to generate some fake temperature data, for testing the graphing functions.
-//#define FAKE_TEMPERATURES
+#define FAKE_TEMPERATURES
 
 char fileName[] =        "LD0000.CSV";
 
@@ -98,16 +98,14 @@ double convertTemperature(double Celcius) {
 // This function runs once. Use it for setting up the program state.
 void setup(void) {
   powerOn();
-  
+
   Serial.begin(9600);
   
   Wire.begin(); // Start using the Wire library; does the i2c communication.
-
-  pinMode(BATTERY_STATUS_PIN, INPUT);
   
   setupBacklight();
   backlightEnabled = true;
-  setBacklight(!backlightEnabled);
+  setBacklight(backlightEnabled);
   
   resetGraph();
   
@@ -124,8 +122,8 @@ void setup(void) {
   
   // Note that this needs to be called after ambientSensor.begin(), because the working version of
   // that library calls Wire.begin(), which resets this value.
-  // Note: SD card can't support a higher datarate!
 //  TWBR = 12; // TWBR=12 sets the i2c SCK to 200 kHz on an 8 MHz clock. Comment out to run at 100 kHz
+
 
   sd::init();
 
@@ -133,7 +131,13 @@ void setup(void) {
 //  DS3231_init(DS3231_INTCN);
 //  DS3231_clear_a1f();
 //  set_next_alarm();
-  
+
+  // Set VBAT_EN high to enable VBAT_SENSE readings
+  pinMode(VBAT_EN, OUTPUT);
+  digitalWrite(VBAT_EN, HIGH);
+
+  pinMode(BATT_STAT, INPUT);
+
   Buttons::setup();
   
   // Turn on the high-speed interrupt loop
@@ -254,6 +258,8 @@ static void updateData() {
 // Taking measurements
 // Updating the screen
 void loop() {
+  pinMode(17, INPUT);
+
   bool needsRefresh = false;
   
   // If enough time has passed, take a new data point
@@ -274,13 +280,13 @@ void loop() {
   if(Buttons::pending()) {
     uint8_t button = Buttons::getPending();
     
-    if(button == BUTTON_POWER) { // Disable power
+    if(button == Buttons::BUTTON_POWER) { // Disable power
       if(!logging) {
         Serial.print("Powering off!\n");
-//        powerOff(u8g);
+        powerOff(u8g);
       }
     }
-    else if(button == BUTTON_A) { // Start/stop logging
+    else if(button == Buttons::BUTTON_A) { // Start/stop logging
       if(!logging) {
         startLogging();
       }
@@ -290,28 +296,28 @@ void loop() {
       
       needsRefresh = true;
     }
-    else if(button == BUTTON_B) { // Cycle log interval
+    else if(button == Buttons::BUTTON_B) { // Cycle log interval
       if(!logging) {
         logInterval = (logInterval + 1) % LOG_INTERVAL_COUNT;
         resetGraph();  // Reset the graph, to keep the x axis consistent
         needsRefresh = true;
       }
     }
-    else if(button == BUTTON_C) { // Cycle temperature units
+    else if(button == Buttons::BUTTON_C) { // Cycle temperature units
       if(!logging) {
         rotateTemperatureUnit();
         needsRefresh = true;
       }
     }
-    else if(button == BUTTON_D) { // Sensor display mode
+    else if(button == Buttons::BUTTON_D) { // Sensor display mode
       if(!logging) {
         // TODO
         needsRefresh = true;
       }
     }
-    else if(button == BUTTON_E) { // Toggle backlight
+    else if(button == Buttons::BUTTON_E) { // Toggle backlight
       backlightEnabled = !backlightEnabled;
-      setBacklight(!backlightEnabled);
+      setBacklight(backlightEnabled);
     }
   }
 
