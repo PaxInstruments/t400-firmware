@@ -228,7 +228,6 @@ void draw(
   while( u8g.nextPage() );
 }
 
-// TODO: TEST
 batteryStatus getBatteryStatus() {
   // We want to output one of these states:
   // DISCHARGING     // VBUS=0
@@ -254,6 +253,8 @@ batteryStatus getBatteryStatus() {
   else {
     return CHARGED;
   }
+
+  return CHARGED;
 }
 
 double GetTypKTemp(double microVolts){

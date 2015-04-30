@@ -41,7 +41,7 @@ Firmware for the Pax Instruments T400 temperature datalogger
 #define BUFF_MAX         80   // Size of the character buffer
 
 // Uncomment this to generate some fake temperature data, for testing the graphing functions.
-#define FAKE_TEMPERATURES
+//#define FAKE_TEMPERATURES
 
 char fileName[] =        "LD0000.CSV";
 
@@ -138,7 +138,9 @@ void setup(void) {
 
   pinMode(BATT_STAT, INPUT);
 
+
   Buttons::setup();
+
   
   // Turn on the high-speed interrupt loop
   // TODO: Adjust interrupt speed.
@@ -258,7 +260,6 @@ static void updateData() {
 // Taking measurements
 // Updating the screen
 void loop() {
-  pinMode(17, INPUT);
 
   bool needsRefresh = false;
   

@@ -45,7 +45,7 @@
 // MISO                     14
 // SCK                      15
 // MOSI                     16
-#define BUTTON_POWER_PIN    0// 17  // TODO
+#define BUTTON_POWER_PIN    10// 17  // TODO
 
 // DATA2                    A0
 #define DATA1               A1
