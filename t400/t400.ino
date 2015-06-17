@@ -255,9 +255,6 @@ static void updateData() {
   
   writeOutputs();
 
-  temperatures[0] = -100;
-  temperatures[1] = 0;
-
   updateGraph(temperatures);
 }
 

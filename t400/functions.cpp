@@ -14,8 +14,7 @@ int8_t graph[SENSOR_COUNT][MAXIMUM_GRAPH_POINTS]={}; // Array to hold graph data
 uint8_t graphCurrentPoint;                           // Index of latest point added to the graph (0,MAXIMUM_GRAPH_POINTS]
 uint8_t graphPoints;                                 // Number of valid points to graph
 
-int16_t graphMin;      // Value of the minimum tick mark
-int16_t graphStep;     // Number of degrees per tick mark in the graph
+int16_t graphMin;      // Value of the minimum tick mark, in degrees
 uint8_t graphScale;    // Number of degrees per pixel in the graph[] array.
 
 uint8_t axisDigits;    // Number of digits to display in the axis labels (ex: '80' -> 2, '1000' -> 4, '-999' -> 4)
@@ -27,22 +26,24 @@ uint8_t axisDigits;    // Number of digits to display in the axis labels (ex: '8
 // @return reference to the memory address of the specified graph point
 #define graphPoint(sensor, point) (graph[sensor][(point + graphCurrentPoint)%MAXIMUM_GRAPH_POINTS])
 
-
-
 // const uint8_t yOffset = DISPLAY_HEIGHT - 3;
 // Convert a temperature measurement from temperature space to graph space
 // uint8_t temperatureToGraphPoint(temperature)
 // @param temperature Temperature measurement, in any unit
+// @param scale Graph scale, in in degrees per pixel
+// @param min Minimum temperature value, in temperature
 // @return representation of the temperature in graph space
-#define temperatureToGraphPoint(temperature) (DISPLAY_HEIGHT - 3 - temperature/graphScale)
+#define temperatureToGraphPoint(temperature, scale, min) (DISPLAY_HEIGHT - 3 - (temperature-min)/scale)
+#define graphPointToTemperature(point, scale, min) ((point - DISPLAY_HEIGHT + 3)*scale + min)
+
+#define graphMax (graphMin + graphScape*4*40)
 
 void resetGraph() {
   graphCurrentPoint = 0;
   graphPoints = 0;
   
-  graphMin = -100;
-  graphStep = 20;
-  graphScale = 2;
+  graphMin = 0;
+  graphScale = 1;
 }
 
 void updateGraph(double* temperatures) {
@@ -60,49 +61,95 @@ void updateGraph(double* temperatures) {
     graphPoints++;
   }
 
+  // Test if any of the new temperatures are out of range, and adjust the graph appropriately.
+
+  double maxTemp = -99999;
+  double minTemp = 99999;
+  for(uint8_t sensor = 0; sensor < SENSOR_COUNT; sensor++) {
+    if(temperatures[sensor] == OUT_OF_RANGE) {
+      continue;
+    }
+
+    if(temperatures[sensor] > maxTemp) {
+      maxTemp = temperatures[sensor];
+    }
+  
+    if(temperatures[sensor] < minTemp) {
+      minTemp = temperatures[sensor];
+    }
+  }
+
+  // Shift the minimum value based on the lowest reading
+  while(minTemp < graphMin) {
+    graphMin -= 10;
+  }
+
+  // Expand the graph scale based on the current measurements
+  while(maxTemp > graphScale * 4 * 10 - graphMin) {
+    graphScale++;
+  }
+
+  // TODO: Contract these later
+
+  // TODO: Scale or invalidate current data
+
   // Record the current readings in the graph
   for(uint8_t sensor = 0; sensor < SENSOR_COUNT; sensor++) {
-    graphPoint(sensor, 0) = (temperatures[sensor] == OUT_OF_RANGE) ? GRAPH_INVALID : temperatureToGraphPoint(temperatures[sensor]);
+    graphPoint(sensor, 0) = (temperatures[sensor] ==
+      OUT_OF_RANGE) ? GRAPH_INVALID : temperatureToGraphPoint(temperatures[sensor],graphScale,graphMin);
   }
-  
-//  // Figure out the correct graph interval
-//  // TODO: Base this on current temperatures only?
-//  graphMin = INT16_MAX;
-//  int16_t graphMax = INT16_MIN;
-//  for(uint8_t pos = sizeof(graph)/(4*sizeof(byte))-1; pos>0; pos--){
-//    for(uint8_t sensor = 0; sensor < SENSOR_COUNT; sensor++) {
-//      if ((graph[sensor][pos] < graphMin) & (graph[sensor][pos] != GRAPH_INVALID)) {
-//        graphMin = graph[sensor][pos];
-//      }
-//      if ((graph[sensor][pos] > graphMax) & (graph[sensor][pos] != GRAPH_INVALID)) {
-//        graphMax = graph[sensor][pos];
-//      }
+
+
+// Find the maximum value displayed on the graph
+//   int16_t newGraphMax = INT16_MIN;
+
+//   for(uint8_t sensor = 0; sensor < 4; sensor++) {
+//     // if the sensor is out of range, don't show it
+//     if(temperatures[sensor] == OUT_OF_RANGE) {
+//       continue;
+//     }
+
+//     int8_t* starting_point = &graph[sensor][graphCurrentPoint];  // Starting address of the graph data
+//     int8_t* wrap_point = &graph[sensor][MAXIMUM_GRAPH_POINTS];   // If the address pointer reaches this, reset it to graph[sensor][0]
+
+//     for(uint8_t point = 0; point < graphPoints; point++) {
+      
+//       // u8g.drawPixel(MAXIMUM_GRAPH_POINTS+12-point,
+//       //               *(starting_point++));
+//       if ((*(starting_point) > newGraphMax) && (*(starting_point) != GRAPH_INVALID)) {
+//         newGraphMax = *(starting_point);
+//       }
+
+//       starting_point++;
+      
+//       if(starting_point == wrap_point) {
+//         starting_point = &graph[sensor][0];
+//       }
+//     }
+//   }
+
+//    // TODO: Handle the case where 0 is not the bottom measurement.
+//    int16_t graphMin = 0;
+
+//    uint8_t newGraphScale = 1 + (graphMax - graphMin)/50;
+   
+//    graphStep = 10*newGraphScale;
+   
+//    if(graphScale != newGraphScale) {
+//      // for(int i = sizeof(graph)/(4*sizeof(byte))-1; i>0;i--){
+//      //   for(int j = 0; j < 4; j++) {
+//      //     graph[j][i] = graph[j][i]*((double)graphScale/newGraphScale);
+//      //   }
+//      // };
+     
+//      graphScale = newGraphScale;
 //    }
-//  };
-  
-//  // TODO: Handle the case where 0 is not the bottom measurement.
-//  graphMin = 0;
-//
-//  int newGraphScale = 1 + (graphMax - graphMin)/50;
-//  
-//  graphStep = 10*newGraphScale;
-//  
-//  if(graphScale != newGraphScale) {
-//    for(int i = sizeof(graph)/(4*sizeof(byte))-1; i>0;i--){
-//      for(int j = 0; j < 4; j++) {
-//        graph[j][i] = graph[j][i]*((double)graphScale/newGraphScale);
-//      }
-//    };
-//    
-//    graphScale = newGraphScale;
-//  }
 
   // Calculate the number of axes digits to display
-  // TODO: Negative numbers
-  if(graphMin + graphStep*4 > 999 || graphMin < -99) {
+  if(graphMin + graphScale*10*4 > 999 || graphMin < -99) {
     axisDigits = 4;
   }
-  else if(graphMin + graphStep*4 > 99 || graphMin < -9) {
+  else if(graphMin + graphScale*10*4 > 99 || graphMin < -9) {
     axisDigits = 3;
   }
   else {
@@ -139,7 +186,7 @@ void draw(
       for(uint8_t interval = 0; interval < GRAPH_INTERVALS; interval++) {
         u8g.drawPixel(CHARACTER_SPACING*axisDigits + 1, 61 - interval*10);
 
-        u8g.drawStr(0, DISPLAY_HEIGHT - interval*10,  dtostrf(graphMin + graphStep*interval,axisDigits,0,buf));
+        u8g.drawStr(0, DISPLAY_HEIGHT - interval*10,  dtostrf(graphMin + graphScale*10*interval,axisDigits,0,buf));
       }
 
       // Draw labels on the right side of graph
@@ -148,9 +195,13 @@ void draw(
         u8g.drawStr(113+5*sensor, 3 + graphPoint(sensor, 0), dtostrf(sensor+1,1,0,buf));
       };
       
-      // Calculate how many graph points to display.
-      // If the axis indicies are >2 character length, scale back the graph.
-      uint8_t lastPoint = MAXIMUM_GRAPH_POINTS - (axisDigits - 2)*5;
+       // Calculate how many graph points to display.
+      uint8_t lastPoint = graphPoints;
+      
+       // If the axis indicies are >2 character length, scale back the graph.
+      if(lastPoint > MAXIMUM_GRAPH_POINTS - (axisDigits - 2)*5) {
+        lastPoint = MAXIMUM_GRAPH_POINTS - (axisDigits - 2)*5;
+      }
 
       // Draw the temperature graph for each sensor
       for(uint8_t sensor = 0; sensor < 4; sensor++) {
@@ -159,9 +210,8 @@ void draw(
           continue;
         }
 
-        // Note: Use pointer arithmatic here to improve speed by 25%
-        int8_t* starting_point = &graph[sensor][graphCurrentPoint];  // Starting address of the graph data
-        int8_t* wrap_point = &graph[sensor][MAXIMUM_GRAPH_POINTS];   // If the address pointer reaches this, reset it to graph[sensor][0]
+       int8_t* starting_point = &graph[sensor][graphCurrentPoint];  // Starting address of the graph data
+       int8_t* wrap_point = &graph[sensor][MAXIMUM_GRAPH_POINTS];   // If the address pointer reaches this, reset it to graph[sensor][0]
 
         for(uint8_t point = 0; point < lastPoint; point++) {
           
