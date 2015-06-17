@@ -93,7 +93,7 @@ void updateGraph(double* temperatures) {
 
   // Expand the graph scale based on the current measurements
   if(maxTemp - graphMin > graphScale * 4) {
-    graphScale = (maxTemp - graphMin + 3) / 4;
+    graphScale = (maxTemp - graphMin + 3.999) / 4;  // TODO: better rounding strategy
   }
 
   // TODO: Contract these later
