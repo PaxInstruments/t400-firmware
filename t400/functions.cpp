@@ -14,8 +14,8 @@ int8_t graph[SENSOR_COUNT][MAXIMUM_GRAPH_POINTS]={}; // Array to hold graph data
 uint8_t graphCurrentPoint;                           // Index of latest point added to the graph (0,MAXIMUM_GRAPH_POINTS]
 uint8_t graphPoints;                                 // Number of valid points to graph
 
-int16_t graphMin;      // Value of the minimum tick mark, in degrees
-uint8_t graphScale;    // Number of degrees per pixel in the graph[] array.
+double graphMin;      // Value of the minimum tick mark, in degrees
+uint32_t graphScale;    // Number of degrees per pixel in the graph[] array.
 
 uint8_t axisDigits;    // Number of digits to display in the axis labels (ex: '80' -> 2, '1000' -> 4, '-999' -> 4)
 
@@ -45,11 +45,11 @@ void resetGraph() {
   graphCurrentPoint = 0;
   graphPoints = 0;
   
-  graphMin = 999;  // TODO: sliding scale?
+  graphMin = 99999;  // TODO: sliding scale?
   graphScale = 1; // in 10ths
 
-  maxTemp = -99999;
-  minTemp = 99999;
+  maxTemp = -999999;
+  minTemp = 999999;
 }
 
 void updateGraph(double* temperatures) {
@@ -83,17 +83,17 @@ void updateGraph(double* temperatures) {
     }
   }
 
-  int16_t graphMinLast = graphMin;
-  uint8_t graphScaleLast = graphScale;
+  double graphMinLast = graphMin;
+  uint32_t graphScaleLast = graphScale;
 
   // Shift the minimum value based on the lowest reading
-  while(minTemp < graphMin) {
-    graphMin -= 1;
+  if(minTemp < graphMin) {
+    graphMin = minTemp;
   }
 
   // Expand the graph scale based on the current measurements
-  while(maxTemp - graphMin > graphScale * 4) {
-    graphScale++;
+  if(maxTemp - graphMin > graphScale * 4) {
+    graphScale = (maxTemp - graphMin + 3) / 4;
   }
 
   // TODO: Contract these later
