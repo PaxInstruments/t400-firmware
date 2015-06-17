@@ -36,7 +36,7 @@ uint8_t axisDigits;    // Number of digits to display in the axis labels (ex: '8
 #define temperatureToGraphPoint(temperature, scale, min) (DISPLAY_HEIGHT - 3 - (temperature-min)/scale)
 #define graphPointToTemperature(point, scale, min) ((point - DISPLAY_HEIGHT + 3)*scale + min)
 
-#define graphMax (graphMin + graphScape*4*40)
+
 
 void resetGraph() {
   graphCurrentPoint = 0;
@@ -79,6 +79,9 @@ void updateGraph(double* temperatures) {
     }
   }
 
+  int16_t graphMinLast = graphMin;
+  uint8_t graphScaleLast = graphScale;
+
   // Shift the minimum value based on the lowest reading
   while(minTemp < graphMin) {
     graphMin -= 10;
@@ -91,7 +94,20 @@ void updateGraph(double* temperatures) {
 
   // TODO: Contract these later
 
-  // TODO: Scale or invalidate current data
+  // If we need to scale or shift the graph, modify the existing readings first
+  // TODO: Fix me!
+  if(graphMinLast != graphMin || graphScaleLast != graphScale) {
+    for(uint8_t sensor = 0; sensor < SENSOR_COUNT; sensor++) {
+      for(uint8_t point = 0; point < MAXIMUM_GRAPH_POINTS; point++) {
+        if(graph[sensor][point] != GRAPH_INVALID) {
+          graph[sensor][point] = temperatureToGraphPoint(
+            graphPointToTemperature(graph[sensor][point],graphScaleLast,graphMinLast),
+            graphScale,
+            graphMin);
+        }
+      }
+    }
+  }
 
   // Record the current readings in the graph
   for(uint8_t sensor = 0; sensor < SENSOR_COUNT; sensor++) {
