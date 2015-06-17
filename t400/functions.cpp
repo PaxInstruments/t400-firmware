@@ -19,6 +19,9 @@ uint8_t graphScale;    // Number of degrees per pixel in the graph[] array.
 
 uint8_t axisDigits;    // Number of digits to display in the axis labels (ex: '80' -> 2, '1000' -> 4, '-999' -> 4)
 
+double maxTemp = -99999;  // highest temperature ever seen (for setting the scale)
+double minTemp = 99999;   // lowest temperature ever seen (for setting the scale)
+
 // Get a reference to the graph point at the specified 
 // uint8_t& graphPoint(uint8_t sensor, uint8_t point)
 // @param sensor Sensor to use (0-3)
@@ -33,17 +36,20 @@ uint8_t axisDigits;    // Number of digits to display in the axis labels (ex: '8
 // @param scale Graph scale, in in degrees per pixel
 // @param min Minimum temperature value, in temperature
 // @return representation of the temperature in graph space
-#define temperatureToGraphPoint(temperature, scale, min) (DISPLAY_HEIGHT - 3 - (temperature-min)/scale)
-#define graphPointToTemperature(point, scale, min) ((point - DISPLAY_HEIGHT + 3)*scale + min)
-
+#define temperatureToGraphPoint(temperature, scale, min) (DISPLAY_HEIGHT - 3 - (temperature-min)/scale*10)
+#define graphPointToTemperature(point, scale, min) (((double)(DISPLAY_HEIGHT - 3 - point))*scale/10.0 + min)
+//#define rescaleGraphPoint(point, originalScale, originalMin, newScale, newMin) ((point - ))
 
 
 void resetGraph() {
   graphCurrentPoint = 0;
   graphPoints = 0;
   
-  graphMin = 0;
-  graphScale = 1;
+  graphMin = 999;  // TODO: sliding scale?
+  graphScale = 1; // in 10ths
+
+  maxTemp = -99999;
+  minTemp = 99999;
 }
 
 void updateGraph(double* temperatures) {
@@ -63,8 +69,6 @@ void updateGraph(double* temperatures) {
 
   // Test if any of the new temperatures are out of range, and adjust the graph appropriately.
 
-  double maxTemp = -99999;
-  double minTemp = 99999;
   for(uint8_t sensor = 0; sensor < SENSOR_COUNT; sensor++) {
     if(temperatures[sensor] == OUT_OF_RANGE) {
       continue;
@@ -84,11 +88,11 @@ void updateGraph(double* temperatures) {
 
   // Shift the minimum value based on the lowest reading
   while(minTemp < graphMin) {
-    graphMin -= 10;
+    graphMin -= 1;
   }
 
   // Expand the graph scale based on the current measurements
-  while(maxTemp > graphScale * 4 * 10 - graphMin) {
+  while(maxTemp - graphMin > graphScale * 4) {
     graphScale++;
   }
 
@@ -162,10 +166,10 @@ void updateGraph(double* temperatures) {
 //    }
 
   // Calculate the number of axes digits to display
-  if(graphMin + graphScale*10*4 > 999 || graphMin < -99) {
+  if(graphMin + graphScale*4 > 999 || graphMin < -99) {
     axisDigits = 4;
   }
-  else if(graphMin + graphScale*10*4 > 99 || graphMin < -9) {
+  else if(graphMin + graphScale*4 > 99 || graphMin < -9) {
     axisDigits = 3;
   }
   else {
@@ -202,7 +206,7 @@ void draw(
       for(uint8_t interval = 0; interval < GRAPH_INTERVALS; interval++) {
         u8g.drawPixel(CHARACTER_SPACING*axisDigits + 1, 61 - interval*10);
 
-        u8g.drawStr(0, DISPLAY_HEIGHT - interval*10,  dtostrf(graphMin + graphScale*10*interval,axisDigits,0,buf));
+        u8g.drawStr(0, DISPLAY_HEIGHT - interval*10,  dtostrf(graphMin + graphScale*interval,axisDigits,0,buf));
       }
 
       // Draw labels on the right side of graph
