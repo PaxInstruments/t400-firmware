@@ -70,7 +70,9 @@ boolean logging = false;          // True if we are currently logging to a file
 
 struct ts rtcTime;                // Buffer to read RTC time into
 
+
 uint8_t temperatureUnit;          // Measurement unit for temperature
+
 
 void rotateTemperatureUnit() {
   // Rotate the unit
@@ -252,6 +254,9 @@ static void updateData() {
   readTemperatures();
   
   writeOutputs();
+
+  temperatures[0] = -100;
+  temperatures[1] = 0;
 
   updateGraph(temperatures);
 }
