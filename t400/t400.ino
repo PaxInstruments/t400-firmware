@@ -31,6 +31,8 @@ Firmware for the Pax Instruments T400 temperature datalogger
 #include <MCP980X.h>    // Ambient/junction temperature sensor
 #include <ds3231.h>     // RTC
 
+#include <avr/sleep.h>
+
 #include "power.h"            // Manage board power
 #include "buttons.h"          // User buttons
 #include "typek_constant.h"   // Thermocouple calibration table
@@ -63,7 +65,6 @@ boolean backlightEnabled;
 #define LOG_INTERVAL_COUNT 6
 const uint8_t logIntervals[LOG_INTERVAL_COUNT] = {1, 2, 5, 10, 30, 60};  // Available log intervals, in seconds
 uint8_t logInterval    = 0;       // currently selected log interval
-unsigned long lastLogTime = 0;   // time data was logged
 boolean logging = false;          // True if we are currently logging to a file
 
 
@@ -135,8 +136,8 @@ void setup(void) {
   pinMode(RTC_INT, INPUT);
   DS3231_init(0);
   
-  // And configure the atmega to interrupt on the falling edge of the 1 Hz signal
-  EICRB |= 0x20;    // Configure INT6 to trigger on the falling edge
+  // And configure the atmega to interrupt on any edge of the 1 Hz signal
+  EICRB &= ~0x30;    // Configure INT6 to trigger on low level
   EIMSK |= 0x40;    // and enable the INT6 interrupt
 
   // Set VBAT_EN high to enable VBAT_SENSE readings
@@ -147,17 +148,18 @@ void setup(void) {
 
   Buttons::setup();
 
-  // Turn on the high-speed interrupt loop
-  // TODO: Adjust interrupt speed.
-  noInterrupts();
-    TCCR4A = 0;
-    TCCR4B = 0;
-    TCCR4B |= (1 << CS43);    // 8 prescaler 
-    TIMSK4 |= (1 << TOIE4);   // enable timer overflow interrupt
-  interrupts();             // enable all interrupts
-  
-  // Schedule the first read for 100ms in the future
-  lastLogTime = millis() - logIntervals[logInterval]*1000 + 100;
+  // TODO: enable interrupts for each of these inputs, then drop tim4sk.
+  //  SW_A 	Logging start/stop 	INT3 	PD3
+  //SW_B 	Logging interval 	INT2 	PD2
+  EICRA |= 0x40 | 0x10;    // Configure INT2 and INT3 to trigger on any edge
+  EIMSK |= 0x08 | 0x04;    // and enable the INT2 and INT3 interrupts
+
+  //SW_C 	Temperature units 	PCINT4 	PB4
+  //SW_D 	Toggle channels 	PCINT5 	PB5
+  //SW_E 	Backlight               PCINT6 	PB6
+  //SW_PWR      Power on/off            PCINT7  PB7
+  PCMSK0 |= 0xF0;
+  PCICR |= 0x01;
 }
 
 void startLogging() {
@@ -323,9 +325,21 @@ void loop() {
       );
     }
   }
+  
+  // Now sleep
+  setBacklight(true);
+  set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+  cli();
+  sleep_enable();
+  sei();
+  sleep_cpu();
+  /* wake up here */
+  sleep_disable();
+  setBacklight(false);
 }
 
 
+// 1 Hz interrupt from RTC
 ISR(INT6_vect)
 {
   isrTicks = (isrTicks + 1)%logIntervals[logInterval];
@@ -335,10 +349,8 @@ ISR(INT6_vect)
   }
 }
 
-
-// Button measurement ISR
-ISR(TIMER4_OVF_vect)
-{
-  Buttons::buttonTask();
-}
+// button interrupts
+ISR(INT2_vect) { Buttons::buttonTask();}
+ISR(INT3_vect) { Buttons::buttonTask();}
+ISR(PCINT0_vect) { Buttons::buttonTask();}
 
