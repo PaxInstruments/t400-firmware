@@ -40,7 +40,7 @@ inline void setupBacklight() {
   pinMode(LCD_BACKLIGHT_PIN, OUTPUT);
 } 
   
-inline void setBacklight(uint8_t level) {
+inline void setBacklight(uint8_t level) {  
   if(level > 0) {
     digitalWrite(LCD_BACKLIGHT_PIN, LOW);
   }

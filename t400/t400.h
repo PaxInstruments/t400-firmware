@@ -35,7 +35,7 @@
 #define VBAT_EN              4  // Enable VBAT_SENSE
 #define SD_CS                5
 #define BATT_STAT            6    // Battery status pin (A7)
-// RTC_INT                      7
+#define RTC_INT              7
 #define BUTTON_C_PIN         8
 #define BUTTON_D_PIN         9
 #define BUTTON_E_PIN        10

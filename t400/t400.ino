@@ -53,13 +53,12 @@ MCP3424      ADC1(MCP3424_ADDR, MCP342X_GAIN_X8, MCP342X_16_BIT);  // address, g
 
 MCP980X ambientSensor(0);      // Ambient temperature sensor
 
+
 const uint8_t temperatureChannels[SENSOR_COUNT] = {1, 0, 3, 2};  // Map of ADC inputs to thermocouple channels
 double temperatures[SENSOR_COUNT];  // Current temperature of each thermocouple input
 double ambient =  0;        // Ambient temperature
 
-
 boolean backlightEnabled;
-
 
 #define LOG_INTERVAL_COUNT 6
 const uint8_t logIntervals[LOG_INTERVAL_COUNT] = {1, 2, 5, 10, 30, 60};  // Available log intervals, in seconds
@@ -67,6 +66,9 @@ uint8_t logInterval    = 0;       // currently selected log interval
 unsigned long lastLogTime = 0;   // time data was logged
 boolean logging = false;          // True if we are currently logging to a file
 
+
+bool timeToSample = false;      // If true, the display should be redrawn
+volatile uint8_t isrTicks = 0;  // Number of 1-second tics that have elapsed since the last sample
 
 struct ts rtcTime;                // Buffer to read RTC time into
 
@@ -129,10 +131,13 @@ void setup(void) {
 
   sd::init();
 
-  // Set up the RTC
-//  DS3231_init(DS3231_INTCN);
-//  DS3231_clear_a1f();
-//  set_next_alarm();
+  // Set up the RTC to generate a 1 Hz signal
+  pinMode(RTC_INT, INPUT);
+  DS3231_init(0);
+  
+  // And configure the atmega to interrupt on the falling edge of the 1 Hz signal
+  EICRB |= 0x20;    // Configure INT6 to trigger on the falling edge
+  EIMSK |= 0x40;    // and enable the INT6 interrupt
 
   // Set VBAT_EN high to enable VBAT_SENSE readings
   pinMode(VBAT_EN, OUTPUT);
@@ -140,10 +145,8 @@ void setup(void) {
 
   pinMode(BATT_STAT, INPUT);
 
-
   Buttons::setup();
 
-  
   // Turn on the high-speed interrupt loop
   // TODO: Adjust interrupt speed.
   noInterrupts();
@@ -181,10 +184,6 @@ static void readTemperatures() {
   
   ambient = ambientSensor.readTempC16(AMBIENT) / 16.0;  // Read ambient temperature in C
   
-#ifdef FAKE_TEMPERATURES
-  static double count = 0;
-#endif
-  
   // ADC read loop: Start a measurement, wait until it is finished, then record it
   for(uint8_t channel = 0; channel < SENSOR_COUNT; channel++) {
     ADC1.startMeasurement(temperatureChannels[channel]);
@@ -196,15 +195,6 @@ static void readTemperatures() {
 
     measuredVoltageMv = ADC1.getMeasurement();
     temperature = GetTypKTemp(measuredVoltageMv*1000);
-
-#ifdef FAKE_TEMPERATURES
-    temperature  = channel*20 + count - ambient;
-    
-    count +=.5;
-    if(count > 10) {
-      count = 0;
-    }
-#endif
 
     if(temperature == OUT_OF_RANGE) {
       temperatures[channel] = OUT_OF_RANGE;
@@ -247,35 +237,20 @@ static void writeOutputs() {
     sd::log(updateBuffer);
   }
 }
-  
-static void updateData() {
-  DS3231_get(&rtcTime);
-  
-  readTemperatures();
-  
-  writeOutputs();
-
-  updateGraph(temperatures);
-}
 
 // This function is called periodically, and performs slow tasks:
 // Taking measurements
 // Updating the screen
 void loop() {
-
-  bool needsRefresh = false;
+  bool needsRefresh = false;  // If true, the display needs to be updated
   
-  // If enough time has passed, take a new data point
-  if(millis() >= lastLogTime + logIntervals[logInterval]*1000) {
+  if(timeToSample) {
+    timeToSample = false;
 
-    lastLogTime += logIntervals[logInterval];
-    
-    // If we've gotten out of sync, reset the last log time to now
-    if(abs(lastLogTime - millis()) > 100) {
-      lastLogTime = millis();
-    }
-
-    updateData();
+    readTemperatures();
+    DS3231_get(&rtcTime);
+    writeOutputs();
+    updateGraph(temperatures);
     
     needsRefresh = true;
   }
@@ -301,7 +276,11 @@ void loop() {
     }
     else if(button == Buttons::BUTTON_B) { // Cycle log interval
       if(!logging) {
+        noInterrupts();
         logInterval = (logInterval + 1) % LOG_INTERVAL_COUNT;
+        isrTicks = logIntervals[logInterval]-1; // TODO: This is a magic number
+        interrupts();
+        
         resetGraph();  // Reset the graph, to keep the x axis consistent
         needsRefresh = true;
       }
@@ -323,8 +302,6 @@ void loop() {
       setBacklight(backlightEnabled);
     }
   }
-
-  needsRefresh = true;  //todo delete me
   
   if(needsRefresh) {    
     if(logging) {
@@ -349,7 +326,18 @@ void loop() {
 }
 
 
-ISR(TIMER4_OVF_vect)        // interrupt service routine 
+ISR(INT6_vect)
+{
+  isrTicks = (isrTicks + 1)%logIntervals[logInterval];
+  
+  if(isrTicks == 0) {
+    timeToSample = true;
+  }
+}
+
+
+// Button measurement ISR
+ISR(TIMER4_OVF_vect)
 {
   Buttons::buttonTask();
 }
