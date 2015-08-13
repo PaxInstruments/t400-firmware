@@ -28,14 +28,14 @@
 #define pcbVersion ".12" // Electronics version 0.12 milestone.
 
 // Pin definitions
-#define BUTTON_B_PIN         0
+#define BUTTON_B_PIN         7
 #define BUTTON_A_PIN         1
 // SDA                       2
 // SCL                       3
 #define VBAT_EN              4  // Enable VBAT_SENSE
 #define SD_CS                5
 #define BATT_STAT            6    // Battery status pin (A7)
-#define RTC_INT              7
+#define RTC_INT              0
 #define BUTTON_C_PIN         8
 #define BUTTON_D_PIN         9
 #define BUTTON_E_PIN        10

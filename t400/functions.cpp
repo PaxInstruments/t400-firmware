@@ -183,7 +183,8 @@ void draw(
   double ambient,
   uint8_t temperatureUnit,
   char* fileName,
-  uint8_t logInterval
+  uint8_t logInterval,
+  uint8_t bStatus
   ) {
 
   // Graphic commands to redraw the complete screen should be placed here
@@ -265,16 +266,29 @@ void draw(
       u8g.drawStr(105, 15, "s");
     
       // Draw battery
-      const uint8_t battX = 128;
-      u8g.drawLine(battX,   14, battX+3, 14);
-      u8g.drawLine(battX,   14, battX,   10);
-      u8g.drawLine(battX+3, 14, battX+3, 10);
-      u8g.drawLine(battX+1,  9, battX+2,  9);
-    
-    
-      uint8_t batteryState = 3;  // Battery state 0-4 (0 = empty, 4=full);
-      for(uint8_t i = 0; i < batteryState; i++) {
-        u8g.drawLine(battX, 13-i, battX+3, 13-i);
+      if(bStatus == DISCHARGING) {
+        const uint8_t battX = 128;
+        u8g.drawLine(battX,   14, battX+3, 14);
+        u8g.drawLine(battX,   14, battX,   10);
+        u8g.drawLine(battX+3, 14, battX+3, 10);
+        u8g.drawLine(battX+1,  9, battX+2,  9);
+      
+        // TODO
+        uint8_t batteryState = 3;  // Battery state 0-4 (0 = empty, 4=full);
+        for(uint8_t i = 0; i < batteryState; i++) {
+          u8g.drawLine(battX, 13-i, battX+3, 13-i);
+        }
+      }
+      else if(bStatus == NO_BATTERY) {
+        const uint8_t battX = 128;
+        u8g.drawLine(battX,   10, battX+3, 14);
+        u8g.drawLine(battX,   14, battX+3, 10);
+
+      }
+      else {
+        const uint8_t battX = 128;
+        u8g.drawLine(battX,   10, battX+3, 10);
+        u8g.drawLine(battX,   14, battX+3, 14);
       }
     }
     
@@ -310,33 +324,36 @@ void draw(
   while( u8g.nextPage() );
 }
 
+extern u8 USBConnected();
+
 batteryStatus getBatteryStatus() {
   // We want to output one of these states:
-  // DISCHARGING     // VBUS=0
-  // CHARGING,       // VBUS=1, BATT_STAT=0
-  // CHARGED,        // VBUS=1, BATT_STAT=1, VBATT_SENSE=?
-  // NO_BATTERY,     // VBUS=1, BATT_STAT=1, VBATT_SENSE=?
-
+//   DISCHARGING = 0,    // VBUS=0
+//   CHARGING = 1,       // VBUS=1, BATT_STAT=0
+//   CHARGED = 2,        // VBUS=1, BATT_STAT=1, VBATT_SENSE=?
+//   NO_BATTERY = 3,     // VBUS=1, BATT_STAT=1, VBATT_SENSE=?
 
   // register USBSTA - bit 0 - VBUS
-  bool VBUS_STAT = USBSTA & (1<<VBUS) == 0x01;
-  bool STAT = digitalRead(BATT_STAT) == HIGH;
-  uint8_t VBATT = analogRead(VBAT_SENSE);
+  USBCON |= (1<<OTGPADE); //enables VBUS pad
+  
+//  bool usbConnected = USBSTA & _BV(VBUS);
+  bool usbConnected = USBConnected();
+  
+  bool STAT = digitalRead(BATT_STAT) == LOW;
+  uint16_t VBATT = analogRead(VBAT_SENSE);
 
-  if(!VBUS_STAT) {
+  if(!usbConnected) {
     return DISCHARGING;
   }
   else if(!STAT) {
     return CHARGING;
   }
-  else if(VBATT < 100) {
+  else if(VBATT < 2000) {
     return NO_BATTERY;
   }
   else {
     return CHARGED;
   }
-
-  return CHARGED;
 }
 
 double GetTypKTemp(double microVolts){

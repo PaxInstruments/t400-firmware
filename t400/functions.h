@@ -16,10 +16,10 @@ extern void updateGraph(double* temperatures);
 extern double GetTypKTemp(double microVolts);
 
 enum batteryStatus {
-  NO_BATTERY,     // VBAT=0 and BATT_STAT = 0?
-  CHARGING,       // VBAT<?? and BATT_STAT = 0?
-  CHARGED,        // VBUS=connected, VBAT>?? and BAT_STAT = 1
-  DISCHARGING     // VBUS=disconnected, VBAT<?? and BATT_STAT = 0?
+   DISCHARGING = 0,    // VBUS=0
+   CHARGING = 1,       // VBUS=1, BATT_STAT=0
+   CHARGED = 2,        // VBUS=1, BATT_STAT=1, VBATT_SENSE=?
+   NO_BATTERY = 3,     // VBUS=1, BATT_STAT=1, VBATT_SENSE=?
 };
 
 // Get the battery status
@@ -32,7 +32,8 @@ extern void draw(
   double ambient,
   uint8_t temperatureUnit,
   char* fileName,
-  uint8_t logInterval
+  uint8_t logInterval,
+  uint8_t bStatus
   );
   
   

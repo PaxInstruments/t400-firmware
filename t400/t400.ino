@@ -62,9 +62,9 @@ double ambient =  0;        // Ambient temperature
 
 boolean backlightEnabled;
 
-#define LOG_INTERVAL_COUNT 6
-const uint8_t logIntervals[LOG_INTERVAL_COUNT] = {1, 2, 5, 10, 30, 60};  // Available log intervals, in seconds
-uint8_t logInterval    = 0;       // currently selected log interval
+#define LOG_INTERVAL_COUNT 7
+const uint8_t logIntervals[LOG_INTERVAL_COUNT] = {1, 2, 4, 10, 20, 60, 120};  // Available log intervals, in half seconds
+uint8_t logInterval    = 1;       // currently selected log interval
 boolean logging = false;          // True if we are currently logging to a file
 
 
@@ -137,8 +137,8 @@ void setup(void) {
   DS3231_init(0);
   
   // And configure the atmega to interrupt on any edge of the 1 Hz signal
-  EICRB &= ~0x30;    // Configure INT6 to trigger on low level
-  EIMSK |= 0x40;    // and enable the INT6 interrupt
+  EICRA |= 0x10;    // Configure INT2 to trigger on any edge
+  EIMSK |= 0x04;    // and enable the INT2 interrupt
 
   // Set VBAT_EN high to enable VBAT_SENSE readings
   pinMode(VBAT_EN, OUTPUT);
@@ -150,9 +150,12 @@ void setup(void) {
 
   // TODO: enable interrupts for each of these inputs, then drop tim4sk.
   //  SW_A 	Logging start/stop 	INT3 	PD3
-  //SW_B 	Logging interval 	INT2 	PD2
-  EICRA |= 0x40 | 0x10;    // Configure INT2 and INT3 to trigger on any edge
-  EIMSK |= 0x08 | 0x04;    // and enable the INT2 and INT3 interrupts
+  EICRA |= 0x40;    // Configure INT3 to trigger on any edge
+  EIMSK |= 0x08;    // and enable the INT3 interrupt
+  
+  //SW_B 	Logging interval 	INT6 	PD2
+  EICRB &= ~0x30;    // Configure INT6 to trigger on low level
+  EIMSK |= 0x40;    // and enable the INT6 interrupt
 
   //SW_C 	Temperature units 	PCINT4 	PB4
   //SW_D 	Toggle channels 	PCINT5 	PB5
@@ -312,7 +315,8 @@ void loop() {
         ambient,
         temperatureUnit,
         fileName,
-        logIntervals[logInterval]
+        logIntervals[logInterval]/2,
+        getBatteryStatus()
       );
     }
     else {
@@ -321,28 +325,29 @@ void loop() {
         ambient,
         temperatureUnit,
         "Not logging",
-        logIntervals[logInterval]
+        logIntervals[logInterval]/2,
+        getBatteryStatus()
       );
     }
   }
   
-  // Now sleep
-  setBacklight(true);
-  set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-  cli();
-  sleep_enable();
-  sei();
-  sleep_cpu();
-  /* wake up here */
-  sleep_disable();
-  setBacklight(false);
+  // Sleep if we don't have a USB connection
+  if(getBatteryStatus() == DISCHARGING) {
+    set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+    cli();
+    sleep_enable();
+    sei();
+    sleep_cpu();
+    /* wake up here */
+    sleep_disable();
+  }
 }
 
 
-// 1 Hz interrupt from RTC
-ISR(INT6_vect)
+// .5 Hz interrupt from RTC
+ISR(INT2_vect)
 {
-  isrTicks = (isrTicks + 1)%logIntervals[logInterval];
+  isrTicks = (isrTicks + 1)%(logIntervals[logInterval]);
   
   if(isrTicks == 0) {
     timeToSample = true;
@@ -350,7 +355,7 @@ ISR(INT6_vect)
 }
 
 // button interrupts
-ISR(INT2_vect) { Buttons::buttonTask();}
+ISR(INT6_vect) { Buttons::buttonTask();}
 ISR(INT3_vect) { Buttons::buttonTask();}
 ISR(PCINT0_vect) { Buttons::buttonTask();}
 
