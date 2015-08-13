@@ -8,8 +8,8 @@ void powerOn() {
   // Turn the power selector on so the board stays on!
   // Note: This is done in the bootloader.
   
-//  digitalWrite(PWR_ONOFF_PIN, LOW);
-//  pinMode(PWR_ONOFF_PIN, OUTPUT);
+  pinMode(PWR_ONOFF_PIN, OUTPUT);
+  digitalWrite(PWR_ONOFF_PIN, LOW);
 }
 
 void powerOff(U8GLIB_PI13264& u8g) {

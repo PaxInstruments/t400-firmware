@@ -16,6 +16,15 @@ const uint8_t buttonPins[BUTTON_COUNT] = {
   BUTTON_POWER_PIN,
 };
 
+const uint8_t activeState[BUTTON_COUNT] = {
+  LOW,
+  LOW,
+  LOW,
+  LOW,
+  LOW,
+  HIGH,
+};
+
 void setup() {
 
   for(uint8_t b = 0; b < BUTTON_COUNT; b++) {
@@ -34,12 +43,12 @@ void buttonTask() {
   
   for(uint8_t b = 0; b < BUTTON_COUNT; b++) {
     if(bitRead(stuckButtonMask, b)) {
-      if (digitalRead(buttonPins[b]) == 1) {
+      if (digitalRead(buttonPins[b]) == !activeState[b]) {
         bitClear(stuckButtonMask, b);
       }
     }
     else {
-      if (digitalRead(buttonPins[b]) == 0) {
+      if (digitalRead(buttonPins[b]) == activeState[b]) {
         bitSet(stuckButtonMask, b);
         bitSet(pendingButtons, b);
       }
