@@ -60,7 +60,7 @@ namespace Display {
 // Lookup table for converting K-type thermocouple measurements into 
 // @param microVolt reading from the ADC
 // @return Temperature, in ???
-double GetTypKTemp(double microVolts);
+double GetTypKTemp(int microVolts);
 
 
 #endif

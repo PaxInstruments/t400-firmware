@@ -313,13 +313,8 @@ void clear() {
 
 }
 
-double GetTypKTemp(double microVolts){
+double GetTypKTemp(int microVolts){
   // Converts the thermocouple µV reading into some usable °C
-  
-  // Check if the sensor was disconnected
-  if(microVolts == 255.99) {
-    return OUT_OF_RANGE;
-  }
   
   // Check if it's out of range
   // TODO: Read this once.
