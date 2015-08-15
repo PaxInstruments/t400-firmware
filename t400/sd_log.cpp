@@ -3,6 +3,8 @@
 #include "t400.h"
 #include "sd_log.h"
 
+extern uint8_t temperatureUnit;
+
 namespace sd {
 
 SdFat sd;
@@ -53,12 +55,43 @@ bool open(char* fileName) {
   // write data header
   file.print("time (s), ambient");
   Serial.print("time (s), ambient");
+  
+  switch(temperatureUnit) {
+  case TEMPERATURE_UNITS_C:
+    file.print(" (C)");
+    Serial.print(" (C)");
+    break;
+  case TEMPERATURE_UNITS_F:
+    file.print(" (F)");
+    Serial.print(" (F)");
+    break;
+  case TEMPERATURE_UNITS_K:
+    file.print(" (K)");
+    Serial.print(" (K)");
+    break;
+  }
 
   for (uint8_t i = 0; i < SENSOR_COUNT; i++) {
     file.print(", sens");
     file.print(i, DEC);
+    
     Serial.print(", sens");
     Serial.print(i, DEC);
+    
+    switch(temperatureUnit) {
+    case TEMPERATURE_UNITS_C:
+      file.print(" (C)");
+      Serial.print(" (C)");
+      break;
+    case TEMPERATURE_UNITS_F:
+      file.print(" (F)");
+      Serial.print(" (F)");
+      break;
+    case TEMPERATURE_UNITS_K:
+      file.print(" (K)");
+      Serial.print(" (K)");
+      break;
+    }
   }
   file.println();
   file.flush();

@@ -62,8 +62,9 @@ boolean logging = false;          // True if we are currently logging to a file
 
 
 bool timeToSample = false;      // If true, the display should be redrawn
-volatile uint8_t isrTick = 0;  // Number of 1-second tics that have elapsed since the last sample
-volatile uint8_t lastIsrTick = 0;  // Last tick that we redrew the screen
+uint8_t isrTick = 0;  // Number of 1-second tics that have elapsed since the last sample
+uint8_t lastIsrTick = 0;  // Last tick that we redrew the screen
+uint32_t logTimeSeconds;  // Number of seconds that have elapsed since logging began
 
 struct ts rtcTime;                // Buffer to read RTC time into
 
@@ -89,7 +90,7 @@ double convertTemperature(double Celcius) {
   else if(temperatureUnit == TEMPERATURE_UNITS_K) {
     return Celcius + 273.15;
   }
-  else {
+  else { // TEMPERATURE_UNITS_F
     return 9.0/5.0*Celcius+32;
   }
 }
@@ -177,11 +178,12 @@ static void writeOutputs() {
  
   // Avoid snprintf() to save 1.4k space 
 //  snprintf(updateBuffer, BUFF_MAX, "%02d:%02d:%02d, ", rtcTime.hour, rtcTime.min, rtcTime.sec);
-  dtostrf(rtcTime.hour, 2, 0, updateBuffer + 0);
-  dtostrf(rtcTime.min,  2, 0, updateBuffer + 3);
-  dtostrf(rtcTime.sec,  2, 0, updateBuffer + 6);
+  dtostrf(logTimeSeconds, 8,0, updateBuffer + 0);
+//  dtostrf(rtcTime.hour, 2, 0, updateBuffer + 0);
+//  dtostrf(rtcTime.min,  2, 0, updateBuffer + 3);
+//  dtostrf(rtcTime.sec,  2, 0, updateBuffer + 6);
   dtostrf(ambient,      1, 2, updateBuffer + 10);
-  updateBuffer[2] = updateBuffer[5] = ':';
+//  updateBuffer[2] = updateBuffer[5] = ':';
   updateBuffer[8] = ',';
   updateBuffer[9] = ' ';
  
@@ -206,6 +208,7 @@ static void writeOutputs() {
 void resetTicks() {
   noInterrupts();
   isrTick = logIntervals[logInterval]-1; // TODO: This is a magic number
+  logTimeSeconds = 0;
   interrupts();
 }
 
@@ -219,7 +222,9 @@ void loop() {
     timeToSample = false;
 
     readTemperatures();
-    DS3231_get(&rtcTime);
+
+//    DS3231_get(&rtcTime);
+
     writeOutputs();
     Display::updateGraph(temperatures);
     
@@ -239,12 +244,12 @@ void loop() {
     }
     else if(button == Buttons::BUTTON_A) { // Start/stop logging
       if(!logging) {
-        resetTicks();
         startLogging();
       }
       else {
         stopLogging();
       }
+      resetTicks();
     }
     else if(button == Buttons::BUTTON_B) { // Cycle log interval
       if(!logging) {
@@ -319,6 +324,7 @@ void loop() {
 ISR(INT2_vect)
 {
   isrTick = (isrTick + 1)%(logIntervals[logInterval]);
+  logTimeSeconds++;
   
   if(isrTick == 0) {
     timeToSample = true;
