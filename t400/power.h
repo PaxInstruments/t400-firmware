@@ -13,8 +13,8 @@ namespace Power {
     // Turn the power selector on so the board stays on!
     // Note: This is done in the bootloader.
     // TODO: Test the updated bootloader and comment this out
-    pinMode(PWR_ONOFF_PIN, OUTPUT);
-    digitalWrite(PWR_ONOFF_PIN, LOW);
+//    pinMode(PWR_ONOFF_PIN, OUTPUT);
+//    digitalWrite(PWR_ONOFF_PIN, LOW);
     
     set_sleep_mode(SLEEP_MODE_PWR_DOWN);
   }

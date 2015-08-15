@@ -39,7 +39,7 @@
 #define BUTTON_D_PIN         9
 #define BUTTON_E_PIN        10
 #define PWR_ONOFF_PIN       30   // Power on/off pin turns board power off (active high)
-#define VBAT_SENSE          A10  // Battery voltage /2 (D12)
+#define VBAT_SENSE          A11  // Battery voltage /2 (D12)
 // #define FLASH_CS            13
 // MISO                     14
 // SCK                      15

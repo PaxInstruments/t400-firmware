@@ -12,6 +12,11 @@
 // If changing the lower limit remember to change it in GetTypKTemp().
 #define TEMP_TYPE_K_LENGTH 165 // Use the i values indicated below. TEMP_TYPE_K_LENGTH should be i+1
 
+
+// Note: if the table changes, update these by hand
+#define TEMP_TYPE_K_MIN_CONVERSION -6458
+#define TEMP_TYPE_K_MAX_CONVERSION 54819
+
 const int32_t tempTypK[TEMP_TYPE_K_LENGTH] PROGMEM = 
 { 
   -6458,  //-270 i=0

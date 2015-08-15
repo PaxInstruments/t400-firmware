@@ -8,6 +8,8 @@
 
 namespace ChargeStatus {
   
+  void setup();
+  
   enum State {
      DISCHARGING = 0,    // VBUS=0
      CHARGING = 1,       // VBUS=1, BATT_STAT=0
@@ -62,7 +64,7 @@ namespace Display {
   void clear();
 }
 
-// Lookup table for converting K-type thermocouple measurements into 
+// Converts the thermocouple µV reading into some usable °C
 // @param microVolt reading from the ADC
 // @return Temperature, in ???
 double GetTypKTemp(int32_t microVolts);

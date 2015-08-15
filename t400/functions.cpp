@@ -313,16 +313,9 @@ void clear() {
 
 }
 
-double GetTypKTemp(int32_t microVolts){
-  // Converts the thermocouple µV reading into some usable °C
-  
-  // Check if it's out of range
-  // TODO: Read this once.
-  // TODO: Why does minConversion not work?
-  int32_t maxConversion = lookupThermocouleData(TEMP_TYPE_K_LENGTH - 1);
-  int32_t minConversion = lookupThermocouleData(0);
-  
-  if(microVolts > maxConversion || microVolts < minConversion){
+double GetTypKTemp(int32_t microVolts) {
+  // Check if it's in range
+  if(microVolts > TEMP_TYPE_K_MAX_CONVERSION || microVolts < TEMP_TYPE_K_MIN_CONVERSION){  
     return OUT_OF_RANGE;
   }
   
@@ -343,6 +336,20 @@ double GetTypKTemp(int32_t microVolts){
 
 
 namespace ChargeStatus {
+  
+void setup() {
+  // Set VBAT_EN high to enable VBAT_SENSE readings
+  pinMode(VBAT_EN, OUTPUT);
+  digitalWrite(VBAT_EN, HIGH);
+
+  // Configure the batt stat pin as an input
+//  analogReference(DEFAULT);
+  pinMode(BATT_STAT, INPUT);
+  pinMode(VBAT_SENSE, INPUT);  
+
+  // enable the VBUS pad
+  USBCON |= (1<<OTGPADE);
+}
 
 State get() {
   // We want to output one of these states:
@@ -351,34 +358,22 @@ State get() {
 //   CHARGED = 2,        // VBUS=1, .8V<BATT_STAT<1.2V
 //   NO_BATTERY = 3,     // VBUS=1, 3V<BATT_STAT
 
-  // Set VBAT_EN high to enable VBAT_SENSE readings
-  pinMode(VBAT_EN, OUTPUT);
-  digitalWrite(VBAT_EN, HIGH);
-
-  USBCON |= (1<<OTGPADE); //enables VBUS pad  
   bool usbConnected = USBSTA & _BV(VBUS);
-  
-  // TODO
-  pinMode(BATT_STAT, INPUT);  
-  analogReference(DEFAULT);
-  uint16_t BATT_STAT_COUNTS = analogRead(BATT_STAT);
+
+  uint16_t battStatCounts = analogRead(BATT_STAT);
   
   #define BATT_CHARGING_COUNTS_MAX  217 // 1024/3.3*.7
   #define BATT_DISCONNECTED_COUNTS_MIN 248 // 1024/3.3*.8
   #define BATT_DISCONNECTED_COUNTS_MAX 372 // 1024/3.3*.1.2
 
-//  pinMode(VBAT_SENSE, INPUT);  
-//  analogReference(DEFAULT);
-//  float VBATT = analogRead(VBAT_SENSE)/1024.0*3.3;
-
   if(!usbConnected) {
     return DISCHARGING;
   }
-  else if(BATT_STAT_COUNTS < BATT_CHARGING_COUNTS_MAX) {
+  else if(battStatCounts < BATT_CHARGING_COUNTS_MAX) {
     return CHARGING;
   }
-  else if(BATT_DISCONNECTED_COUNTS_MIN < BATT_STAT_COUNTS
-        && BATT_STAT_COUNTS < BATT_DISCONNECTED_COUNTS_MAX) {
+  else if(BATT_DISCONNECTED_COUNTS_MIN < battStatCounts
+        && battStatCounts < BATT_DISCONNECTED_COUNTS_MAX) {
     return NO_BATTERY;
   }
   else {
@@ -388,7 +383,16 @@ State get() {
 }
 
 uint8_t getBatteryLevel() {
-  return 2;
+  // VBAT_SENSE_V= 34 × VBAT/(34 + 18.7)
+  // VBAT_SENSE_COUNTS = VBAT_SENSE_V / 3.3 * 1024
+  
+  #define VBAT_SENSE_FULL 626    // Note: these should be higher, not sure what's the deal.
+  #define VBAT_SENSE_EMPTY 589
+  
+  uint16_t vbatSenseCounts = analogRead(VBAT_SENSE);
+  uint8_t batteryLevel = ((vbatSenseCounts - VBAT_SENSE_EMPTY)*4)/(VBAT_SENSE_FULL - VBAT_SENSE_EMPTY);
+  
+  return batteryLevel<5?batteryLevel:4;
 }
 
 }

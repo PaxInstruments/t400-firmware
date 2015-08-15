@@ -98,6 +98,7 @@ double convertTemperature(double Celcius) {
 // This function runs once. Use it for setting up the program state.
 void setup(void) {
   Power::setup();
+  ChargeStatus::setup();
 
   Serial.begin(9600);
   
