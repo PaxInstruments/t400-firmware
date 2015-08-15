@@ -386,11 +386,12 @@ uint8_t getBatteryLevel() {
   // VBAT_SENSE_V= 34 × VBAT/(34 + 18.7)
   // VBAT_SENSE_COUNTS = VBAT_SENSE_V / 3.3 * 1024
   
-  #define VBAT_SENSE_FULL 626    // Note: these should be higher, not sure what's the deal.
-  #define VBAT_SENSE_EMPTY 589
+  #define VBAT_SENSE_FULL 820   // 4.1V
+  #define VBAT_SENSE_EMPTY 720  // 3.6V
   
+  // Note: We'll divide this into 5 sections so that the user gets a full battery for a little bit.
   uint16_t vbatSenseCounts = analogRead(VBAT_SENSE);
-  uint8_t batteryLevel = ((vbatSenseCounts - VBAT_SENSE_EMPTY)*4)/(VBAT_SENSE_FULL - VBAT_SENSE_EMPTY);
+  uint8_t batteryLevel = ((vbatSenseCounts - VBAT_SENSE_EMPTY)*5)/(VBAT_SENSE_FULL - VBAT_SENSE_EMPTY);
   
   return batteryLevel<5?batteryLevel:4;
 }
