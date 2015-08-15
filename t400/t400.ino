@@ -17,7 +17,6 @@ Firmware for the Pax Instruments T400 temperature datalogger
 4. Restart Arduino if it was already running
 5. In tools->board, set the Arduino board to "Pax Instruments T400".
 6. In tools->port, select the serial port corresponding to the T400 (Arduino should identify it correctly)
-7. Hold down the power button on the device, then upload the firmware.
 
 */
 
@@ -38,10 +37,9 @@ Firmware for the Pax Instruments T400 temperature datalogger
 #include "sd_log.h"           // SD card utilities
 #include "t400.h"             // Board definitions
 
+
 #define BUFF_MAX         80   // Size of the character buffer
 
-// Uncomment this to generate some fake temperature data, for testing the graphing functions.
-//#define FAKE_TEMPERATURES
 
 char fileName[] =        "LD0000.CSV";
 
@@ -57,14 +55,15 @@ double ambient =  0;        // Ambient temperature
 
 boolean backlightEnabled = true;
 
-#define LOG_INTERVAL_COUNT 7
-const uint8_t logIntervals[LOG_INTERVAL_COUNT] = {1, 2, 4, 10, 20, 60, 120};  // Available log intervals, in half seconds
-uint8_t logInterval    = 1;       // currently selected log interval
+#define LOG_INTERVAL_COUNT 6
+const uint8_t logIntervals[LOG_INTERVAL_COUNT] = {1, 2, 5, 10, 30, 60};  // Available log intervals, in seconds
+uint8_t logInterval    = 0;       // currently selected log interval
 boolean logging = false;          // True if we are currently logging to a file
 
 
 bool timeToSample = false;      // If true, the display should be redrawn
-volatile uint8_t isrTicks = 0;  // Number of 1-second tics that have elapsed since the last sample
+volatile uint8_t isrTick = 0;  // Number of 1-second tics that have elapsed since the last sample
+volatile uint8_t lastIsrTick = 0;  // Last tick that we redrew the screen
 
 struct ts rtcTime;                // Buffer to read RTC time into
 
@@ -125,9 +124,9 @@ void setup(void) {
   pinMode(RTC_INT, INPUT);
   DS3231_init(0);
   
-  // And configure the atmega to interrupt on any edge of the 1 Hz signal
-  EICRA |= 0x10;    // Configure INT2 to trigger on any edge
-  EIMSK |= 0x04;    // and enable the INT2 interrupt
+  // And configure the atmega to interrupt on falling edge of the 1 Hz signal
+  EICRA |= _BV(ISC21);    // Configure INT2 to trigger on falling edge
+  EIMSK |= _BV(INT2);    // and enable the INT2 interrupt
 
   Buttons::setup();
 }
@@ -252,7 +251,7 @@ void loop() {
       if(!logging) {
         noInterrupts();
         logInterval = (logInterval + 1) % LOG_INTERVAL_COUNT;
-        isrTicks = logIntervals[logInterval]-1; // TODO: This is a magic number
+        isrTick = logIntervals[logInterval]-1; // TODO: This is a magic number
         interrupts();
         
         Display::resetGraph();  // Reset the graph, to keep the x axis consistent
@@ -277,6 +276,14 @@ void loop() {
     }
   }
   
+  // If we are charging, refresh the display every second to make the charging animation
+  if(ChargeStatus::get() == ChargeStatus::CHARGING) {
+    if(lastIsrTick != isrTick) {
+      needsRefresh = true;
+      lastIsrTick = isrTick;
+    }
+  }
+  
   if(needsRefresh) {    
     if(logging) {
       Display::draw(
@@ -284,7 +291,7 @@ void loop() {
         ambient,
         temperatureUnit,
         fileName,
-        logIntervals[logInterval]/2,
+        logIntervals[logInterval],
         ChargeStatus::get()
       );
     }
@@ -294,25 +301,26 @@ void loop() {
         ambient,
         temperatureUnit,
         "Not logging",
-        logIntervals[logInterval]/2,
+        logIntervals[logInterval],
         ChargeStatus::get()
       );
     }
   }
   
-  // Sleep if we don't have a USB connection
+  // Sleep if we are on battery power
+  // Note: Don't sleep if there is power, in case we need to communicate over USB
   if(ChargeStatus::get() == ChargeStatus::DISCHARGING) {
     Power::sleep();
   }
 }
 
 
-// .5 Hz interrupt from RTC
+// 1 Hz interrupt from RTC
 ISR(INT2_vect)
 {
-  isrTicks = (isrTicks + 1)%(logIntervals[logInterval]);
+  isrTick = (isrTick + 1)%(logIntervals[logInterval]);
   
-  if(isrTicks == 0) {
+  if(isrTick == 0) {
     timeToSample = true;
   }
 }

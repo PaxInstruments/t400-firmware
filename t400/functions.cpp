@@ -231,8 +231,9 @@ void draw(
       u8g.drawStr(105, 15, "s");
     
       // Draw battery
+      const uint8_t battX = 128;
+      const uint8_t battY = 9;
       if(bStatus == ChargeStatus::DISCHARGING) {
-        const uint8_t battX = 128;
         u8g.drawLine(battX,   14, battX+3, 14);
         u8g.drawLine(battX,   14, battX,   10);
         u8g.drawLine(battX+3, 14, battX+3, 10);
@@ -245,16 +246,29 @@ void draw(
         }
       }
       else if(bStatus == ChargeStatus::NO_BATTERY) {
-        const uint8_t battX = 128;
-        u8g.drawLine(battX,   10, battX+3, 14);
-        u8g.drawLine(battX,   14, battX+3, 10);
+        u8g.drawLine(battX,   battY,   battX,   battY+5);
+        u8g.drawLine(battX,   battY,   battX+3, battY);
+        u8g.drawLine(battX,   battY+2, battX+2, battY+2);
+        u8g.drawLine(battX,   battY+5, battX+3, battY+5);
 
       }
-      else {
-        // Charging, charged TODO: DISAMBIGUATE
-        const uint8_t battX = 128;
-        u8g.drawLine(battX,   10, battX+3, 10);
+      else if(bStatus == ChargeStatus::CHARGING) {
         u8g.drawLine(battX,   14, battX+3, 14);
+        u8g.drawLine(battX,   14, battX,   10);
+        u8g.drawLine(battX+3, 14, battX+3, 10);
+        u8g.drawLine(battX+1,  9, battX+2,  9);
+      
+        static uint8_t batteryState = 0;
+        batteryState = (batteryState+1)%5;
+        for(uint8_t i = 0; i < batteryState; i++) {
+          u8g.drawLine(battX, 13-i, battX+3, 13-i);
+        }
+      }
+      else {  // CHARGED
+        u8g.drawLine(battX,   battY+1, battX,   battY+5);
+        u8g.drawLine(battX+1, battY,   battX+1, battY+5);
+        u8g.drawLine(battX+2, battY,   battX+2, battY+5);
+        u8g.drawLine(battX+3, battY+1, battX+3, battY+5);
       }
     }
     
@@ -353,7 +367,6 @@ State get() {
   pinMode(BATT_STAT, INPUT);  
   analogReference(DEFAULT);
   float BATT_STAT_V = analogRead(BATT_STAT)/1024.0*3.3;
-//  float BATT_STAT_V = 3.3;
 
   pinMode(VBAT_SENSE, INPUT);  
   analogReference(DEFAULT);

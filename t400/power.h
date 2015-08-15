@@ -15,11 +15,12 @@ namespace Power {
     // TODO: Test the updated bootloader and comment this out
     pinMode(PWR_ONOFF_PIN, OUTPUT);
     digitalWrite(PWR_ONOFF_PIN, LOW);
+    
+    set_sleep_mode(SLEEP_MODE_PWR_DOWN);
   }
   
   // Put the processor into sleep mode
   inline void sleep() {
-    set_sleep_mode(SLEEP_MODE_PWR_DOWN);
     cli();
     sleep_enable();
     sei();
