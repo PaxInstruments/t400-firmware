@@ -202,6 +202,13 @@ static void writeOutputs() {
   }
 }
 
+// Reset the tick counter, so that a new measurement takes place within 1 second
+void resetTicks() {
+  noInterrupts();
+  isrTick = logIntervals[logInterval]-1; // TODO: This is a magic number
+  interrupts();
+}
+
 // This function is called periodically, and performs slow tasks:
 // Taking measurements
 // Updating the screen
@@ -224,7 +231,7 @@ void loop() {
     
     if(button == Buttons::BUTTON_POWER) { // Disable power
       if(!logging) {
-        Serial.print("Powering off!\n");
+//        Serial.print("Powering off!\n");
         Display::clear();
         Backlight::set(0);
         Power::shutdown();
@@ -232,35 +239,35 @@ void loop() {
     }
     else if(button == Buttons::BUTTON_A) { // Start/stop logging
       if(!logging) {
+        resetTicks();
         startLogging();
       }
       else {
         stopLogging();
       }
-      
-      needsRefresh = true;
     }
     else if(button == Buttons::BUTTON_B) { // Cycle log interval
       if(!logging) {
-        noInterrupts();
         logInterval = (logInterval + 1) % LOG_INTERVAL_COUNT;
-        isrTick = logIntervals[logInterval]-1; // TODO: This is a magic number
-        interrupts();
+        resetTicks();
         
         Display::resetGraph();  // Reset the graph, to keep the x axis consistent
-        needsRefresh = true;
+        resetTicks();
+        needsRefresh = false;
       }
     }
     else if(button == Buttons::BUTTON_C) { // Cycle temperature units
       if(!logging) {
         rotateTemperatureUnit();
-        needsRefresh = true;
+        resetTicks();
+        needsRefresh = false;
       }
     }
     else if(button == Buttons::BUTTON_D) { // Sensor display mode
       if(!logging) {
         // TODO
-        needsRefresh = true;
+        resetTicks();
+        needsRefresh = false;
       }
     }
     else if(button == Buttons::BUTTON_E) { // Toggle backlight
