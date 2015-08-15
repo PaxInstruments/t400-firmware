@@ -18,8 +18,8 @@ void error_P(const char* str) {
   close();
 }
 
-// TODO: do this every time open() is called, in case the user unplugged the SD card.
 void init() {
+  close();
   
   if (!sd.begin(SD_CS, SPI_HALF_SPEED)) {
     error_P("card.init");
@@ -27,7 +27,7 @@ void init() {
   }
 }
 
-void open(char* fileName) {
+bool open(char* fileName) {
   // Create LDxxxx.CSV for the lowest value of x.
   
   uint16_t i = 0;
@@ -43,35 +43,43 @@ void open(char* fileName) {
 
   if(!file.open(fileName, O_CREAT | O_WRITE | O_EXCL)) {
     error_P("file open");
-    return;
+    return false;
   }
+  file.clearWriteError();
   
   Serial.println("Logging to:");
   Serial.println(fileName);
 
   // write data header
-  file.print("time, ambient");
+  file.print("time (s), ambient");
+  Serial.print("time (s), ambient");
 
   for (uint8_t i = 0; i < SENSOR_COUNT; i++) {
     file.print(", sens");
-    file.print(i, DEC);    
+    file.print(i, DEC);
+    Serial.print(", sens");
+    Serial.print(i, DEC);
   }
   file.println();
   file.flush();
+  Serial.println();
+
+  return (file.getWriteError() == false);
 }
 
 void close() {
-  // TODO: Test for error first?
   file.close();
 }
 
-void log(char* message) {
+bool log(char* message) {
   // TODO: Test if file is open first
   
   // log time to file
   file.println(message);
 
   sync(false);
+  
+  return (file.getWriteError() == false);
 }
 
 void sync(boolean force) {

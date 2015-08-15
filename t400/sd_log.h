@@ -9,14 +9,15 @@ void init();
 // Open a file for logging
 // @param fileName File name to save to. If the file already exists, the name will be iterated until
 //        an unused file is found.
-void open(char* fileName);
+// @return True if the file could be opened, false otherwise
+bool open(char* fileName);
 
 // Close the file on the SD card and disconnect from it
 // Call this before powering down the board
 void close();
 
 // Log a message to the SD card
-void log(char* message);
+bool log(char* message);
 
 // Flush the SD card data to disk
 // @param force If true, force the data to be synced

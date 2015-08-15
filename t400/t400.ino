@@ -113,8 +113,6 @@ void setup(void) {
   ambientSensor.begin();
   ambientSensor.writeConfig(ADC_RES_12BITS);
 
-  sd::init();
-
   // Set up the RTC to generate a 1 Hz signal
   pinMode(RTC_INT, INPUT);
   DS3231_init(0);
@@ -130,9 +128,9 @@ void startLogging() {
   if(logging) {
     return;
   }
-  
-  logging = true;
-  sd::open(fileName);
+
+  sd::init();
+  logging = sd::open(fileName);
 }
 
 void stopLogging() {
@@ -200,7 +198,7 @@ static void writeOutputs() {
   Serial.println(updateBuffer);
 
   if(logging) {
-    sd::log(updateBuffer);
+    logging = sd::log(updateBuffer);
   }
 }
 
