@@ -8,7 +8,11 @@
 #include "t400.h"
 #include "functions.h"
 
-
+namespace Display {
+  
+// Graphical LCD
+U8GLIB_PI13264  u8g(LCD_CS, LCD_A0, LCD_RST); // Use HW-SPI
+  
 //// Graph data
 int8_t graph[SENSOR_COUNT][MAXIMUM_GRAPH_POINTS]={}; // Array to hold graph data, in pixels
 uint8_t graphCurrentPoint;                           // Index of latest point added to the graph (0,MAXIMUM_GRAPH_POINTS]
@@ -119,52 +123,6 @@ void updateGraph(double* temperatures) {
       OUT_OF_RANGE) ? GRAPH_INVALID : temperatureToGraphPoint(temperatures[sensor],graphScale,graphMin);
   }
 
-
-// Find the maximum value displayed on the graph
-//   int16_t newGraphMax = INT16_MIN;
-
-//   for(uint8_t sensor = 0; sensor < 4; sensor++) {
-//     // if the sensor is out of range, don't show it
-//     if(temperatures[sensor] == OUT_OF_RANGE) {
-//       continue;
-//     }
-
-//     int8_t* starting_point = &graph[sensor][graphCurrentPoint];  // Starting address of the graph data
-//     int8_t* wrap_point = &graph[sensor][MAXIMUM_GRAPH_POINTS];   // If the address pointer reaches this, reset it to graph[sensor][0]
-
-//     for(uint8_t point = 0; point < graphPoints; point++) {
-      
-//       // u8g.drawPixel(MAXIMUM_GRAPH_POINTS+12-point,
-//       //               *(starting_point++));
-//       if ((*(starting_point) > newGraphMax) && (*(starting_point) != GRAPH_INVALID)) {
-//         newGraphMax = *(starting_point);
-//       }
-
-//       starting_point++;
-      
-//       if(starting_point == wrap_point) {
-//         starting_point = &graph[sensor][0];
-//       }
-//     }
-//   }
-
-//    // TODO: Handle the case where 0 is not the bottom measurement.
-//    int16_t graphMin = 0;
-
-//    uint8_t newGraphScale = 1 + (graphMax - graphMin)/50;
-   
-//    graphStep = 10*newGraphScale;
-   
-//    if(graphScale != newGraphScale) {
-//      // for(int i = sizeof(graph)/(4*sizeof(byte))-1; i>0;i--){
-//      //   for(int j = 0; j < 4; j++) {
-//      //     graph[j][i] = graph[j][i]*((double)graphScale/newGraphScale);
-//      //   }
-//      // };
-     
-//      graphScale = newGraphScale;
-//    }
-
   // Calculate the number of axes digits to display
   if(graphMin + graphScale*4 > 999 || graphMin < -99) {
     axisDigits = 4;
@@ -177,14 +135,21 @@ void updateGraph(double* temperatures) {
   }
 }
 
+void setup() {
+  u8g.setContrast(LCD_CONTRAST); // Set contrast level
+  
+  u8g.setRot180(); // Rotate screen
+  u8g.setColorIndex(1); // Set color mode to binary
+  u8g.setFont(u8g_font_5x8r); // Select font. See https://code.google.com/p/u8glib/wiki/fontsize
+}
+
 void draw(
-  U8GLIB_PI13264& u8g,
   double* temperatures,
   double ambient,
   uint8_t temperatureUnit,
   char* fileName,
   uint8_t logInterval,
-  uint8_t bStatus
+  ChargeStatus::State bStatus
   ) {
 
   // Graphic commands to redraw the complete screen should be placed here
@@ -266,26 +231,27 @@ void draw(
       u8g.drawStr(105, 15, "s");
     
       // Draw battery
-      if(bStatus == DISCHARGING) {
+      if(bStatus == ChargeStatus::DISCHARGING) {
         const uint8_t battX = 128;
         u8g.drawLine(battX,   14, battX+3, 14);
         u8g.drawLine(battX,   14, battX,   10);
         u8g.drawLine(battX+3, 14, battX+3, 10);
         u8g.drawLine(battX+1,  9, battX+2,  9);
       
-        // TODO
+        // TODO: charge level
         uint8_t batteryState = 3;  // Battery state 0-4 (0 = empty, 4=full);
         for(uint8_t i = 0; i < batteryState; i++) {
           u8g.drawLine(battX, 13-i, battX+3, 13-i);
         }
       }
-      else if(bStatus == NO_BATTERY) {
+      else if(bStatus == ChargeStatus::NO_BATTERY) {
         const uint8_t battX = 128;
         u8g.drawLine(battX,   10, battX+3, 14);
         u8g.drawLine(battX,   14, battX+3, 10);
 
       }
       else {
+        // Charging, charged TODO: DISAMBIGUATE
         const uint8_t battX = 128;
         u8g.drawLine(battX,   10, battX+3, 10);
         u8g.drawLine(battX,   14, battX+3, 14);
@@ -324,36 +290,13 @@ void draw(
   while( u8g.nextPage() );
 }
 
-extern u8 USBConnected();
+void clear() {
+  // Clear the screen
+  u8g.firstPage();  
+  do {
+  } while( u8g.nextPage() );
+}
 
-batteryStatus getBatteryStatus() {
-  // We want to output one of these states:
-//   DISCHARGING = 0,    // VBUS=0
-//   CHARGING = 1,       // VBUS=1, BATT_STAT=0
-//   CHARGED = 2,        // VBUS=1, BATT_STAT=1, VBATT_SENSE=?
-//   NO_BATTERY = 3,     // VBUS=1, BATT_STAT=1, VBATT_SENSE=?
-
-  // register USBSTA - bit 0 - VBUS
-  USBCON |= (1<<OTGPADE); //enables VBUS pad
-  
-//  bool usbConnected = USBSTA & _BV(VBUS);
-  bool usbConnected = USBConnected();
-  
-  bool STAT = digitalRead(BATT_STAT) == LOW;
-  uint16_t VBATT = analogRead(VBAT_SENSE);
-
-  if(!usbConnected) {
-    return DISCHARGING;
-  }
-  else if(!STAT) {
-    return CHARGING;
-  }
-  else if(VBATT < 2000) {
-    return NO_BATTERY;
-  }
-  else {
-    return CHARGED;
-  }
 }
 
 double GetTypKTemp(double microVolts){
@@ -389,3 +332,46 @@ double GetTypKTemp(double microVolts){
   return LookedupValue;
 }
 
+
+namespace ChargeStatus {
+
+State get() {
+  // We want to output one of these states:
+//   DISCHARGING = 0,    // VBUS=0
+//   CHARGING = 1,       // VBUS=1, BATT_STAT<.7V
+//   CHARGED = 2,        // VBUS=1, .8V<BATT_STAT<1.2V
+//   NO_BATTERY = 3,     // VBUS=1, 3V<BATT_STAT
+
+  // Set VBAT_EN high to enable VBAT_SENSE readings
+  pinMode(VBAT_EN, OUTPUT);
+  digitalWrite(VBAT_EN, HIGH);
+
+  USBCON |= (1<<OTGPADE); //enables VBUS pad  
+  bool usbConnected = USBSTA & _BV(VBUS);
+  
+  // TODO
+  pinMode(BATT_STAT, INPUT);  
+  analogReference(DEFAULT);
+  float BATT_STAT_V = analogRead(BATT_STAT)/1024.0*3.3;
+//  float BATT_STAT_V = 3.3;
+
+  pinMode(VBAT_SENSE, INPUT);  
+  analogReference(DEFAULT);
+  float VBATT = analogRead(VBAT_SENSE)/1024.0*3.3;
+
+  if(!usbConnected) {
+    return DISCHARGING;
+  }
+  else if(BATT_STAT_V < .7) {
+    return CHARGING;
+  }
+  else if(.8 < BATT_STAT_V && BATT_STAT_V < 1.2) {
+    return NO_BATTERY;
+  }
+  else {
+    // default to this
+    return CHARGED;
+  }
+}
+
+}

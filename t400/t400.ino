@@ -31,8 +31,6 @@ Firmware for the Pax Instruments T400 temperature datalogger
 #include <MCP980X.h>    // Ambient/junction temperature sensor
 #include <ds3231.h>     // RTC
 
-#include <avr/sleep.h>
-
 #include "power.h"            // Manage board power
 #include "buttons.h"          // User buttons
 #include "typek_constant.h"   // Thermocouple calibration table
@@ -47,11 +45,8 @@ Firmware for the Pax Instruments T400 temperature datalogger
 
 char fileName[] =        "LD0000.CSV";
 
-// Graphical LCD
-U8GLIB_PI13264  u8g(LCD_CS, LCD_A0, LCD_RST); // Use HW-SPI
-
 // MCP3424 for thermocouple measurements
-MCP3424      ADC1(MCP3424_ADDR, MCP342X_GAIN_X8, MCP342X_16_BIT);  // address, gain, resolution
+MCP3424      thermocoupleAdc(MCP3424_ADDR, MCP342X_GAIN_X8, MCP342X_16_BIT);  // address, gain, resolution
 
 MCP980X ambientSensor(0);      // Ambient temperature sensor
 
@@ -60,7 +55,7 @@ const uint8_t temperatureChannels[SENSOR_COUNT] = {1, 0, 3, 2};  // Map of ADC i
 double temperatures[SENSOR_COUNT];  // Current temperature of each thermocouple input
 double ambient =  0;        // Ambient temperature
 
-boolean backlightEnabled;
+boolean backlightEnabled = true;
 
 #define LOG_INTERVAL_COUNT 7
 const uint8_t logIntervals[LOG_INTERVAL_COUNT] = {1, 2, 4, 10, 20, 60, 120};  // Available log intervals, in half seconds
@@ -82,7 +77,7 @@ void rotateTemperatureUnit() {
   temperatureUnit = (temperatureUnit + 1) % TEMPERATURE_UNITS_COUNT;
 
   // Reset the graph so we don't have to worry about scaling it
-  resetGraph();
+  Display::resetGraph();
   
   // TODO: Convert the current data to new units?
 }
@@ -102,25 +97,19 @@ double convertTemperature(double Celcius) {
 
 // This function runs once. Use it for setting up the program state.
 void setup(void) {
-  powerOn();
+  Power::setup();
 
   Serial.begin(9600);
   
   Wire.begin(); // Start using the Wire library; does the i2c communication.
   
-  setupBacklight();
-  backlightEnabled = true;
-  setBacklight(backlightEnabled);
+  Backlight::setup();
+  Backlight::set(backlightEnabled);
   
-  resetGraph();
+  Display::setup();
+  Display::resetGraph();
   
-  u8g.setContrast(LCD_CONTRAST); // Set contrast level
-  
-  u8g.setRot180(); // Rotate screen
-  u8g.setColorIndex(1); // Set color mode to binary
-  u8g.setFont(u8g_font_5x8r); // Select font. See https://code.google.com/p/u8glib/wiki/fontsize
-
-  ADC1.begin();
+  thermocoupleAdc.begin();
 
   ambientSensor.begin();
   ambientSensor.writeConfig(ADC_RES_12BITS);
@@ -140,29 +129,7 @@ void setup(void) {
   EICRA |= 0x10;    // Configure INT2 to trigger on any edge
   EIMSK |= 0x04;    // and enable the INT2 interrupt
 
-  // Set VBAT_EN high to enable VBAT_SENSE readings
-  pinMode(VBAT_EN, OUTPUT);
-  digitalWrite(VBAT_EN, HIGH);
-
-  pinMode(BATT_STAT, INPUT);
-
   Buttons::setup();
-
-  // TODO: enable interrupts for each of these inputs, then drop tim4sk.
-  //  SW_A 	Logging start/stop 	INT3 	PD3
-  EICRA |= 0x40;    // Configure INT3 to trigger on any edge
-  EIMSK |= 0x08;    // and enable the INT3 interrupt
-  
-  //SW_B 	Logging interval 	INT6 	PD2
-  EICRB &= ~0x30;    // Configure INT6 to trigger on low level
-  EIMSK |= 0x40;    // and enable the INT6 interrupt
-
-  //SW_C 	Temperature units 	PCINT4 	PB4
-  //SW_D 	Toggle channels 	PCINT5 	PB5
-  //SW_E 	Backlight               PCINT6 	PB6
-  //SW_PWR      Power on/off            PCINT7  PB7
-  PCMSK0 |= 0xF0;
-  PCICR |= 0x01;
 }
 
 void startLogging() {
@@ -191,14 +158,14 @@ static void readTemperatures() {
   
   // ADC read loop: Start a measurement, wait until it is finished, then record it
   for(uint8_t channel = 0; channel < SENSOR_COUNT; channel++) {
-    ADC1.startMeasurement(temperatureChannels[channel]);
+    thermocoupleAdc.startMeasurement(temperatureChannels[channel]);
     do {
       // Delay a while. At 16-bit resolution, the ADC can do a speed of 1/15 = .066seconds/cycle
       // Let's wait a little longer than that in case there is set up time for changing channels.
       delay(75);
-    } while(!ADC1.measurementReady());
+    } while(!thermocoupleAdc.measurementReady());
 
-    measuredVoltageMv = ADC1.getMeasurement();
+    measuredVoltageMv = thermocoupleAdc.getMeasurement();
     temperature = GetTypKTemp(measuredVoltageMv*1000);
 
     if(temperature == OUT_OF_RANGE) {
@@ -255,7 +222,7 @@ void loop() {
     readTemperatures();
     DS3231_get(&rtcTime);
     writeOutputs();
-    updateGraph(temperatures);
+    Display::updateGraph(temperatures);
     
     needsRefresh = true;
   }
@@ -266,7 +233,9 @@ void loop() {
     if(button == Buttons::BUTTON_POWER) { // Disable power
       if(!logging) {
         Serial.print("Powering off!\n");
-        powerOff(u8g);
+        Display::clear();
+        Backlight::set(0);
+        Power::shutdown();
       }
     }
     else if(button == Buttons::BUTTON_A) { // Start/stop logging
@@ -286,7 +255,7 @@ void loop() {
         isrTicks = logIntervals[logInterval]-1; // TODO: This is a magic number
         interrupts();
         
-        resetGraph();  // Reset the graph, to keep the x axis consistent
+        Display::resetGraph();  // Reset the graph, to keep the x axis consistent
         needsRefresh = true;
       }
     }
@@ -304,42 +273,36 @@ void loop() {
     }
     else if(button == Buttons::BUTTON_E) { // Toggle backlight
       backlightEnabled = !backlightEnabled;
-      setBacklight(backlightEnabled);
+      Backlight::set(backlightEnabled);
     }
   }
   
   if(needsRefresh) {    
     if(logging) {
-      draw(u8g,
+      Display::draw(
         temperatures,
         ambient,
         temperatureUnit,
         fileName,
         logIntervals[logInterval]/2,
-        getBatteryStatus()
+        ChargeStatus::get()
       );
     }
     else {
-      draw(u8g,
+      Display::draw(
         temperatures, 
         ambient,
         temperatureUnit,
         "Not logging",
         logIntervals[logInterval]/2,
-        getBatteryStatus()
+        ChargeStatus::get()
       );
     }
   }
   
   // Sleep if we don't have a USB connection
-  if(getBatteryStatus() == DISCHARGING) {
-    set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-    cli();
-    sleep_enable();
-    sei();
-    sleep_cpu();
-    /* wake up here */
-    sleep_disable();
+  if(ChargeStatus::get() == ChargeStatus::DISCHARGING) {
+    Power::sleep();
   }
 }
 
@@ -353,9 +316,4 @@ ISR(INT2_vect)
     timeToSample = true;
   }
 }
-
-// button interrupts
-ISR(INT6_vect) { Buttons::buttonTask();}
-ISR(INT3_vect) { Buttons::buttonTask();}
-ISR(PCINT0_vect) { Buttons::buttonTask();}
 

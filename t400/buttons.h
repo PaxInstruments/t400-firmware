@@ -3,10 +3,8 @@
 
 #include <Arduino.h>
 
-
 namespace Buttons {
   // Button names
-
   enum Button {
     BUTTON_A,
     BUTTON_B,
@@ -17,10 +15,9 @@ namespace Buttons {
     BUTTON_COUNT
   };
 
-  extern void setup();
-  extern void buttonTask();
-  extern bool pending();
-  extern uint8_t getPending();
+  void setup();
+  bool pending();
+  uint8_t getPending();
 }
 
 #endif // BUTTONARRAY_HH
