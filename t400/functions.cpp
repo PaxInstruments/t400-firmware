@@ -149,7 +149,8 @@ void draw(
   uint8_t temperatureUnit,
   char* fileName,
   uint8_t logInterval,
-  ChargeStatus::State bStatus
+  ChargeStatus::State bStatus,
+  uint8_t batteryLevel
   ) {
 
   // Graphic commands to redraw the complete screen should be placed here
@@ -240,8 +241,7 @@ void draw(
         u8g.drawLine(battX+1,  9, battX+2,  9);
       
         // TODO: charge level
-        uint8_t batteryState = 3;  // Battery state 0-4 (0 = empty, 4=full);
-        for(uint8_t i = 0; i < batteryState; i++) {
+        for(uint8_t i = 0; i < batteryLevel; i++) {
           u8g.drawLine(battX, 13-i, battX+3, 13-i);
         }
       }
@@ -385,6 +385,10 @@ State get() {
     // default to this
     return CHARGED;
   }
+}
+
+uint8_t getBatteryLevel() {
+  return 2;
 }
 
 }

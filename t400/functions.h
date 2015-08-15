@@ -18,6 +18,10 @@ namespace ChargeStatus {
   // Get the battery status
   // @return 
   State get();
+  
+  // Get a measurement of the battery leve
+  // @return 0 = empty, 4= full
+  uint8_t getBatteryLevel();
 }
 
 
@@ -51,7 +55,8 @@ namespace Display {
     uint8_t temperatureUnit,
     char* fileName,
     uint8_t logInterval,
-    ChargeStatus::State bStatus
+    ChargeStatus::State bStatus,
+    uint8_t batteryLevel
     );
   
   void clear();

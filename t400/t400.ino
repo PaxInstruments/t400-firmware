@@ -297,7 +297,8 @@ void loop() {
         temperatureUnit,
         fileName,
         logIntervals[logInterval],
-        ChargeStatus::get()
+        ChargeStatus::get(),
+        ChargeStatus::getBatteryLevel()
       );
     }
     else {
@@ -307,7 +308,8 @@ void loop() {
         temperatureUnit,
         "Not logging",
         logIntervals[logInterval],
-        ChargeStatus::get()
+        ChargeStatus::get(),
+        ChargeStatus::getBatteryLevel()
       );
     }
   }
