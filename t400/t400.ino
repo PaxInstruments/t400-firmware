@@ -112,11 +112,6 @@ void setup(void) {
 
   ambientSensor.begin();
   ambientSensor.writeConfig(ADC_RES_12BITS);
-  
-  // Note that this needs to be called after ambientSensor.begin(), because the working version of
-  // that library calls Wire.begin(), which resets this value.
-//  TWBR = 12; // TWBR=12 sets the i2c SCK to 200 kHz on an 8 MHz clock. Comment out to run at 100 kHz
-
 
   sd::init();
 

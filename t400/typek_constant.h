@@ -114,10 +114,11 @@ const int32_t tempTypK[TEMP_TYPE_K_LENGTH] PROGMEM =
   29129, // 700
   29548, // 710
   29965, // 720
-  30382/*, // 730 i=100 // Numbers past here are beyond the range of int variables.
-   30798, // 740        // Do something creative here. Maybe divide these by ten then multiply later.
-   31213, // 750        // if (i>25){tempTypeK[i]*10};
-   31628, // 760        // Lower resolution from then on, but it may be good enough. Better than nothing.
+  30382, // 730 i=100
+/*
+   30798, // 740
+   31213, // 750
+   31628, // 760
    32041, // 770
    32453, // 780
    32865, // 790

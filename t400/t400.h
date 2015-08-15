@@ -1,19 +1,18 @@
 // Hardware definitions for the t400
 
 // Compile-time settings. Some of these should be set by the user during operation.
-#define LOG_INTERVAL     10      // millseconds between entries
 #define SYNC_INTERVAL    1000    // millis between calls to sync()
 
 #define SENSOR_COUNT     4       // Number of sensors on the board (fixed)
 
 #define OUT_OF_RANGE     99999.9 // Double value representing an invalid temp. measurement
-#define GRAPH_INVALID    -126    // Invalid graph point
+#define GRAPH_INVALID    -127    // Invalid graph point
 
 // Graph display settings
 #define MAXIMUM_GRAPH_POINTS    100
 
 #define DISPLAY_HEIGHT  64    // Height of the display
-#define CHARACTER_SPACING 5     // Width of a character+space to next character
+#define CHARACTER_SPACING 5   // Width of a character+space to next character
 
 #define TEMPERATURE_UNITS_C  0
 #define TEMPERATURE_UNITS_F  1
@@ -24,8 +23,8 @@
 /// I2C addresses
 #define MCP3424_ADDR    0x69
 
-// Pin definitions for Electronics version 0.12
-#define pcbVersion ".12" // Electronics version 0.12 milestone.
+// Pin definitions for Electronics version 0.13
+#define pcbVersion ".13" // Electronics version 0.12 milestone.
 
 // Pin definitions
 #define BUTTON_B_PIN         7
@@ -55,19 +54,4 @@
 #define LCD_BACKLIGHT_PIN   A5   // LCD backlight on pin
 
 
-
 #define LCD_CONTRAST     0x018*7  // Sets the LCD contrast
-
-
-#define DEBUG            0 // Debugging code: 0 disable, 1 enable
-#define DEBUG_LCD        0 // Debugging code: 0 disable, 1 enable
-
-
-// Creates a funciton for printing to serial during debugging.
-#if DEBUG
-#define DEBUG_PRINT(x)    Serial.print (x)
-#define DEBUG_PRINTLN(x)  Serial.println (x)
-#else
-#define DEBUG_PRINT(x)
-#define DEBUG_PRINTLN(x)
-#endif
