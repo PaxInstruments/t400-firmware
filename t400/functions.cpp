@@ -313,16 +313,16 @@ void clear() {
 
 }
 
-double GetTypKTemp(int microVolts){
+double GetTypKTemp(int32_t microVolts){
   // Converts the thermocouple µV reading into some usable °C
   
   // Check if it's out of range
   // TODO: Read this once.
   // TODO: Why does minConversion not work?
-  double maxConversion = lookupThermocouleData(TEMP_TYPE_K_LENGTH - 1);
-  double minConversion = lookupThermocouleData(0);
+  int32_t maxConversion = lookupThermocouleData(TEMP_TYPE_K_LENGTH - 1);
+  int32_t minConversion = lookupThermocouleData(0);
   
-  if(microVolts > maxConversion || microVolts < -200){
+  if(microVolts > maxConversion || microVolts < minConversion){
     return OUT_OF_RANGE;
   }
   

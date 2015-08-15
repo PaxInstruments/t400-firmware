@@ -150,7 +150,7 @@ void stopLogging() {
 }
 
 static void readTemperatures() {
-  int measuredVoltageUv;
+  int32_t measuredVoltageUv;
   double temperature;
   
   ambient = ambientSensor.readTempC16(AMBIENT) / 16.0;  // Read ambient temperature in C
@@ -161,7 +161,7 @@ static void readTemperatures() {
     do {
       // Delay a while. At 16-bit resolution, the ADC can do a speed of 1/15 = .066seconds/cycle
       // Let's wait a little longer than that in case there is set up time for changing channels.
-      delay(75);
+      delay(70);
     } while(!thermocoupleAdc.measurementReady());
 
     measuredVoltageUv = thermocoupleAdc.getMeasurementUv();
