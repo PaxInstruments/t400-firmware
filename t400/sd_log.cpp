@@ -10,19 +10,19 @@ SdFile file;
 
 uint32_t syncTime      = 0;     // time of last sync(), in millis()
 
-void error_P(const char* str) {
-  Serial.print("error: ");
-  Serial.print(str);
-  
-  // Stop the SD card
-  close();
-}
+//void error_P(const char* str) {
+//  Serial.print("error: ");
+//  Serial.print(str);
+//  
+//  // Stop the SD card
+//  close();
+//}
 
 void init() {
   close();
   
-  if (!sd.begin(SD_CS, SPI_HALF_SPEED)) {
-    error_P("card.init");
+  if (!sd.begin(SD_CS, SPI_FULL_SPEED)) {
+//    error_P("card.init");
     return;
   }
 }
@@ -42,7 +42,7 @@ bool open(char* fileName) {
 
 
   if(!file.open(fileName, O_CREAT | O_WRITE | O_EXCL)) {
-    error_P("file open");
+//    error_P("file open");
     return false;
   }
   file.clearWriteError();

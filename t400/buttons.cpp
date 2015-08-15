@@ -7,7 +7,6 @@ namespace Buttons {
 uint8_t stuckButtonMask;
 uint8_t pendingButtons;
 
-
 const uint8_t buttonPins[BUTTON_COUNT] = {
   BUTTON_A_PIN,
   BUTTON_B_PIN,

@@ -10,7 +10,7 @@
 // Lookup Table for the TypK:
 // From -270 to 1350°C in steps of 10°C, the list is in µV according to that Temp.
 // If changing the lower limit remember to change it in GetTypKTemp().
-#define TEMP_TYPE_K_LENGTH 101 // Use the i values indicated below. TEMP_TYPE_K_LENGTH should be i+1
+#define TEMP_TYPE_K_LENGTH 141 // Use the i values indicated below. TEMP_TYPE_K_LENGTH should be i+1
 
 const int32_t tempTypK[TEMP_TYPE_K_LENGTH] PROGMEM = 
 { 
@@ -115,7 +115,6 @@ const int32_t tempTypK[TEMP_TYPE_K_LENGTH] PROGMEM =
   29548, // 710
   29965, // 720
   30382, // 730 i=100
-/*
    30798, // 740
    31213, // 750
    31628, // 760
@@ -156,6 +155,7 @@ const int32_t tempTypK[TEMP_TYPE_K_LENGTH] PROGMEM =
    45497, // 1110
    45873, // 1120
    46249, // 1130 i=140
+   /*
    46623, // 1140
    46995, // 1150
    47367, // 1160
