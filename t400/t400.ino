@@ -41,7 +41,7 @@ Firmware for the Pax Instruments T400 temperature datalogger
 #define BUFF_MAX         80   // Size of the character buffer
 
 
-char fileName[] =        "LD0000.CSV";
+char fileName[] =        "LD0001.CSV";
 
 // MCP3424 for thermocouple measurements
 MCP3424      thermocoupleAdc(MCP3424_ADDR, MCP342X_GAIN_X8, MCP342X_16_BIT);  // address, gain, resolution
