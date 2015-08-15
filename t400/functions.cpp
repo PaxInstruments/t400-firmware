@@ -366,19 +366,24 @@ State get() {
   // TODO
   pinMode(BATT_STAT, INPUT);  
   analogReference(DEFAULT);
-  float BATT_STAT_V = analogRead(BATT_STAT)/1024.0*3.3;
+  uint16_t BATT_STAT_COUNTS = analogRead(BATT_STAT);
+  
+  #define BATT_CHARGING_COUNTS_MAX  217 // 1024/3.3*.7
+  #define BATT_DISCONNECTED_COUNTS_MIN 248 // 1024/3.3*.8
+  #define BATT_DISCONNECTED_COUNTS_MAX 372 // 1024/3.3*.1.2
 
-  pinMode(VBAT_SENSE, INPUT);  
-  analogReference(DEFAULT);
-  float VBATT = analogRead(VBAT_SENSE)/1024.0*3.3;
+//  pinMode(VBAT_SENSE, INPUT);  
+//  analogReference(DEFAULT);
+//  float VBATT = analogRead(VBAT_SENSE)/1024.0*3.3;
 
   if(!usbConnected) {
     return DISCHARGING;
   }
-  else if(BATT_STAT_V < .7) {
+  else if(BATT_STAT_COUNTS < BATT_CHARGING_COUNTS_MAX) {
     return CHARGING;
   }
-  else if(.8 < BATT_STAT_V && BATT_STAT_V < 1.2) {
+  else if(BATT_DISCONNECTED_COUNTS_MIN < BATT_STAT_COUNTS
+        && BATT_STAT_COUNTS < BATT_DISCONNECTED_COUNTS_MAX) {
     return NO_BATTERY;
   }
   else {
