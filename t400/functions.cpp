@@ -327,7 +327,7 @@ double GetTypKTemp(int32_t microVolts) {
     int32_t valueHigh = lookupThermocouleData(i + 1);
     
     if(microVolts >= valueLow && microVolts <= valueHigh){
-      LookedupValue = ((double)-270 + (i)*10) + ((10 *(microVolts - valueLow)) / ((valueHigh - valueLow)));
+      LookedupValue = ((double)-270 + (i)*10) + ((10 *(double)(microVolts - valueLow)) / ((double)(valueHigh - valueLow)));
       break;
     }
   }
