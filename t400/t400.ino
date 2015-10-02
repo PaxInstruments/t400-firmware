@@ -183,10 +183,10 @@ static void writeOutputs() {
 //  dtostrf(rtcTime.hour, 2, 0, updateBuffer + 0);
 //  dtostrf(rtcTime.min,  2, 0, updateBuffer + 3);
 //  dtostrf(rtcTime.sec,  2, 0, updateBuffer + 6);
-  dtostrf(ambient,      1, 2, updateBuffer + 10);
+//  dtostrf(ambient,      1, 2, updateBuffer + 10);
 //  updateBuffer[2] = updateBuffer[5] = ':';
-  updateBuffer[8] = ',';
-  updateBuffer[9] = ' ';
+//  updateBuffer[8] = ',';
+//  updateBuffer[9] = ' ';
  
   for(uint8_t i = 0; i < SENSOR_COUNT; i++) {
     if(temperatures[i] == OUT_OF_RANGE) {
@@ -294,7 +294,7 @@ void loop() {
     if(logging) {
       Display::draw(
         temperatures,
-        ambient,
+       // ambient,
         temperatureUnit,
         fileName,
         logIntervals[logInterval],
@@ -305,7 +305,7 @@ void loop() {
     else {
       Display::draw(
         temperatures, 
-        ambient,
+       // ambient,
         temperatureUnit,
         "Not logging",
         logIntervals[logInterval],

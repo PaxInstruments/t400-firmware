@@ -145,7 +145,7 @@ void setup() {
 
 void draw(
   double* temperatures,
-  double ambient,
+//  double ambient,
   uint8_t temperatureUnit,
   char* fileName,
   uint8_t logInterval,
@@ -214,16 +214,17 @@ void draw(
 
     //// Draw status bar
     else if(page == 6) {  
-      u8g.drawStr(0,  15, dtostrf(ambient,5,1,buf));         // Ambient temperature
+      //u8g.drawStr(0,  15, dtostrf(ambient,5,1,buf));         // Ambient temperature
+      u8g.drawStr(0,  15, "Deg"); 
       
       if(temperatureUnit == TEMPERATURE_UNITS_C) {
-        u8g.drawStr(25, 15, "C");
+        u8g.drawStr(20, 15, "C");
       }
       else if(temperatureUnit == TEMPERATURE_UNITS_F) {
-        u8g.drawStr(25, 15, "F");
+        u8g.drawStr(20, 15, "F");
       }
       else {
-        u8g.drawStr(25, 15, "K");
+        u8g.drawStr(20, 15, "K");
       }
       
       u8g.drawStr(35, 15,fileName);                          // File name

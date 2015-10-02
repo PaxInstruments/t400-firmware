@@ -49,9 +49,15 @@ bool open(char* fileName) {
   }
   file.clearWriteError();
   
-  Serial.println("Logging to:");
+  Serial.print("File: ");
   Serial.println(fileName);
 
+
+  // write data header
+  file.print("time (s)");
+  Serial.print("time (s)");
+  
+  /* We are no longer using the junction temperature in our data output.
   // write data header
   file.print("time (s), ambient");
   Serial.print("time (s), ambient");
@@ -69,13 +75,14 @@ bool open(char* fileName) {
     file.print(" (K)");
     Serial.print(" (K)");
     break;
-  }
+    
+  }*/
 
   for (uint8_t i = 0; i < SENSOR_COUNT; i++) {
-    file.print(", sens");
+    file.print(", temp_");
     file.print(i, DEC);
     
-    Serial.print(", sens");
+    Serial.print(", temp_");
     Serial.print(i, DEC);
     
     switch(temperatureUnit) {
