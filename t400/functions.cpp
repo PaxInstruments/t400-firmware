@@ -215,22 +215,24 @@ void draw(
     //// Draw status bar
     else if(page == 6) {  
       //u8g.drawStr(0,  15, dtostrf(ambient,5,1,buf));         // Ambient temperature
-      u8g.drawStr(0,  15, "Deg"); 
+      u8g.drawStr(0,  15, "TypK"); 
+
+      u8g.drawStr(25,  13, "o"); 
       
       if(temperatureUnit == TEMPERATURE_UNITS_C) {
-        u8g.drawStr(20, 15, "C");
+        u8g.drawStr(30, 15, "C");
       }
       else if(temperatureUnit == TEMPERATURE_UNITS_F) {
-        u8g.drawStr(20, 15, "F");
+        u8g.drawStr(30, 15, "F");
       }
       else {
-        u8g.drawStr(20, 15, "K");
+        u8g.drawStr(30, 15, "K");
       }
       
-      u8g.drawStr(35, 15,fileName);                          // File name
+      u8g.drawStr(40, 15,fileName);                          // File name
     
-      u8g.drawStr( 95, 15, dtostrf(logInterval,2,0,buf));    // Interval
-      u8g.drawStr(105, 15, "s");
+      u8g.drawStr( 100, 15, dtostrf(logInterval,2,0,buf));    // Interval
+      u8g.drawStr(110, 15, "s");
     
       // Draw battery
       const uint8_t battX = 128;
