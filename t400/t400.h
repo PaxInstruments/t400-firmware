@@ -29,8 +29,8 @@
 #define FIRMWARE_VERSION "0.14-beta"
 
 // Pin definitions
-#define BUTTON_B_PIN         7
-#define BUTTON_A_PIN         1
+#define BUTTON_B_PIN         1  // 0.12-mod 7, 0.13 1
+#define BUTTON_A_PIN         7  // 0.12-mod 1, 0.13 7
 // SDA                       2
 // SCL                       3
 #define VBAT_EN              4  // Enable VBAT_SENSE
