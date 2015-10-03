@@ -146,6 +146,7 @@ void setup() {
 void draw(
   double* temperatures,
 //  double ambient,
+  uint8_t graphChannel,
   uint8_t temperatureUnit,
   char* fileName,
   uint8_t logInterval,
@@ -179,6 +180,9 @@ void draw(
       // Draw labels on the right side of graph
       // TODO:scale these correctly?
       for(uint8_t sensor=0; sensor<4; sensor++){
+        if(temperatures[sensor] == OUT_OF_RANGE || sensor != graphChannel && graphChannel < 4) {
+          continue;
+        }
         u8g.drawStr(113+5*sensor, 3 + graphPoint(sensor, 0), dtostrf(sensor+1,1,0,buf));
       };
       
@@ -193,7 +197,7 @@ void draw(
       // Draw the temperature graph for each sensor
       for(uint8_t sensor = 0; sensor < 4; sensor++) {
         // if the sensor is out of range, don't show it
-        if(temperatures[sensor] == OUT_OF_RANGE) {
+        if(temperatures[sensor] == OUT_OF_RANGE || sensor != graphChannel && graphChannel < 4) {
           continue;
         }
 

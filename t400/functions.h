@@ -54,6 +54,7 @@ namespace Display {
   void draw(
     double* temperatures,
   //  double ambient,
+  uint8_t graphChannel,
     uint8_t temperatureUnit,
     char* fileName,
     uint8_t logInterval,

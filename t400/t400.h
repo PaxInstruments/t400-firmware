@@ -18,6 +18,7 @@
 #define TEMPERATURE_UNITS_F  1
 #define TEMPERATURE_UNITS_K  2
 #define TEMPERATURE_UNITS_COUNT 3
+#define GRAPH_CHANNELS_COUNT 5
 
 
 /// I2C addresses

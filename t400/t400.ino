@@ -68,8 +68,9 @@ uint32_t logTimeSeconds;  // Number of seconds that have elapsed since logging b
 
 struct ts rtcTime;                // Buffer to read RTC time into
 
-
 uint8_t temperatureUnit;          // Measurement unit for temperature
+
+uint8_t graphChannel = 4;
 
 
 void rotateTemperatureUnit() {
@@ -270,7 +271,7 @@ void loop() {
       }
     }
     else if(button == Buttons::BUTTON_D) { // Sensor display mode
-      // TODO
+      graphChannel = (graphChannel + 1) % GRAPH_CHANNELS_COUNT;
       needsRefresh = true;
     }
     else if(button == Buttons::BUTTON_E) { // Toggle backlight
@@ -292,6 +293,7 @@ void loop() {
       Display::draw(
         temperatures,
        // ambient,
+        graphChannel,
         temperatureUnit,
         fileName,
         logIntervals[logInterval],
@@ -303,6 +305,7 @@ void loop() {
       Display::draw(
         temperatures, 
        // ambient,
+        graphChannel,
         temperatureUnit,
         "Not logging",
         logIntervals[logInterval],
