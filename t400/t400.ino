@@ -272,6 +272,9 @@ void loop() {
     }
     else if(button == Buttons::BUTTON_D) { // Sensor display mode
       graphChannel = (graphChannel + 1) % GRAPH_CHANNELS_COUNT;
+      while(graphChannel < 4 & temperatures[graphChannel] == OUT_OF_RANGE) {
+        graphChannel = (graphChannel + 1) % GRAPH_CHANNELS_COUNT;
+      }
       needsRefresh = true;
     }
     else if(button == Buttons::BUTTON_E) { // Toggle backlight
