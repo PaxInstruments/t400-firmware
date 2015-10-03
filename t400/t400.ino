@@ -270,11 +270,8 @@ void loop() {
       }
     }
     else if(button == Buttons::BUTTON_D) { // Sensor display mode
-      if(!logging) {
-        // TODO
-        resetTicks();
-        needsRefresh = false;
-      }
+      // TODO
+      needsRefresh = true;
     }
     else if(button == Buttons::BUTTON_E) { // Toggle backlight
       backlightEnabled = !backlightEnabled;
