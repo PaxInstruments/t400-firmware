@@ -49,11 +49,11 @@ void resetGraph() {
   graphCurrentPoint = 0;
   graphPoints = 0;
   
-  graphMin = 99999;  // TODO: sliding scale?
+  graphMin = 25;  // TODO: sliding scale?
   graphScale = 1; // in 10ths
 
-  maxTemp = -999999;
-  minTemp = 999999;
+  maxTemp = 29;
+  minTemp = 25;
 }
 
 void updateGraph(double* temperatures) {
