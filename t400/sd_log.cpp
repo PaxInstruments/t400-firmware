@@ -49,6 +49,9 @@ bool open(char* fileName) {
   }
   file.clearWriteError();
   
+  Serial.print("v");
+  Serial.println(FIRMWARE_VERSION);
+
   Serial.print("File: ");
   Serial.println(fileName);
 

@@ -26,6 +26,7 @@
 
 // Pin definitions for Electronics version 0.13
 #define pcbVersion ".13" // Electronics version 0.12 milestone.
+#define FIRMWARE_VERSION "0.14-beta"
 
 // Pin definitions
 #define BUTTON_B_PIN         7
