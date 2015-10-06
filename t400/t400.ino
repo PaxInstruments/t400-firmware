@@ -252,6 +252,7 @@ void loop() {
         stopLogging();
       }
       resetTicks();
+        needsRefresh = true;
     }
     else if(button == Buttons::BUTTON_B) { // Cycle log interval
       if(!logging) {
@@ -260,14 +261,14 @@ void loop() {
         
         Display::resetGraph();  // Reset the graph, to keep the x axis consistent
         resetTicks();
-        needsRefresh = false;
+        needsRefresh = true;
       }
     }
     else if(button == Buttons::BUTTON_C) { // Cycle temperature units
       if(!logging) {
         rotateTemperatureUnit();
         resetTicks();
-        needsRefresh = false;
+        needsRefresh = true;
       }
     }
     else if(button == Buttons::BUTTON_D) { // Sensor display mode
