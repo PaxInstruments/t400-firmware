@@ -32,14 +32,15 @@ void setup() {
       pinMode(buttonPins[b], INPUT_PULLUP);
     }
   }
-
-  // SW_A 	Logging start/stop 	INT3 	PD3
-  EICRA |= 0x40;    // Configure INT3 to trigger on any edge
-  EIMSK |= _BV(INT3);    // and enable the INT3 interrupt
   
-  // SW_B 	Logging interval 	INT6 	PD2
+  // SW_A 	Logging interval 	INT6 	PE6
   EICRB &= ~0x30;    // Configure INT6 to trigger on low level
   EIMSK |= _BV(INT6);    // and enable the INT6 interrupt
+
+
+  // SW_B   Logging start/stop  INT3  PD3
+  EICRA |= 0x40;    // Configure INT3 to trigger on any edge
+  EIMSK |= _BV(INT3);    // and enable the INT3 interrupt
 
   // SW_C 	Temperature units 	PCINT4 	PB4
   // SW_D 	Toggle channels 	PCINT5 	PB5
@@ -98,11 +99,11 @@ uint8_t getPending() {
 // button interrupts
 ISR(INT6_vect) {
   // Workaround for the issue that ISR6 needs to be level sensitive to wake the processor from power down:
-  // If we got here and SW_B was low (button pressed), switch to rising mode so we don't get stuck here
-  // If we got here and SW_B was was high (button released), switch to level mode so we can wake the processor
-  // In addition, don't put the processor in POWER_DOWN sleep mode when INT6 is level sensitive or SW_B won't
+  // If we got here and the INT6 switch was low (button pressed), switch to rising mode so we don't get stuck here
+  // If we got here and the INT6 switch was was high (button released), switch to level mode so we can wake the processor
+  // In addition, don't put the processor in POWER_DOWN sleep mode when INT6 is level sensitive or the INT6 switch won't
   // be able to wake the processor
-  if(digitalRead(BUTTON_B_PIN) == LOW) {
+  if(digitalRead(BUTTON_A_PIN) == LOW) {
     EICRB |= 0x30;    // Configure INT6 to trigger on rising edge
     set_sleep_mode(SLEEP_MODE_IDLE);
   }
