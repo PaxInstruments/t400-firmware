@@ -1,4 +1,5 @@
 // Hardware definitions for the t400
+#define __AVR_ATmega32U4__ 1
 
 // Compile-time settings. Some of these should be set by the user during operation.
 #define SYNC_INTERVAL    1000    // millis between calls to sync()

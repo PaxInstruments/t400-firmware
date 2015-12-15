@@ -21,6 +21,8 @@ Firmware for the Pax Instruments T400 temperature datalogger
 */
 
 // Import libraries
+#include "t400.h"             // Board definitions
+
 #include <Wire.h>       // i2c
 #include <SPI.h>
 #include <SdFat.h>
@@ -35,8 +37,6 @@ Firmware for the Pax Instruments T400 temperature datalogger
 #include "typek_constant.h"   // Thermocouple calibration table
 #include "functions.h"        // Misc. functions
 #include "sd_log.h"           // SD card utilities
-#include "t400.h"             // Board definitions
-
 
 #define BUFF_MAX         80   // Size of the character buffer
 
