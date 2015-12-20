@@ -321,6 +321,7 @@ void clear() {
 }
 
 double GetTypKTemp(int32_t microVolts) {
+  microVolts += 6458; //Add an offset for the adjusted lookup table.
   // Check if it's in range
   if(microVolts > TEMP_TYPE_K_MAX_CONVERSION || microVolts < TEMP_TYPE_K_MIN_CONVERSION){  
     return OUT_OF_RANGE;
@@ -330,8 +331,8 @@ double GetTypKTemp(int32_t microVolts) {
   
   // TODO: Binary search here to decrease lookup time
   for(uint16_t i = 0; i<TEMP_TYPE_K_LENGTH; i++){
-    int32_t valueLow = lookupThermocouleData(i);
-    int32_t valueHigh = lookupThermocouleData(i + 1);
+    uint16_t valueLow = lookupThermocouleData(i);
+    uint16_t valueHigh = lookupThermocouleData(i + 1);
     
     if(microVolts >= valueLow && microVolts <= valueHigh){
       LookedupValue = ((double)-270 + (i)*10) + ((10 *(double)(microVolts - valueLow)) / ((double)(valueHigh - valueLow)));
