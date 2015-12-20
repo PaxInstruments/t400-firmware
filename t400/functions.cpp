@@ -320,6 +320,12 @@ void clear() {
 
 }
 
+double GetJunctionVoltage(uint16_t jTemp) {
+  // TODO use lookup table to determine the thermocouple voltage that corresponds
+  // to the junction temperature.
+  return 0;
+}
+
 double GetTypKTemp(int32_t microVolts) {
   microVolts += 6458; //Add an offset for the adjusted lookup table.
   // Check if it's in range

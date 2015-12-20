@@ -147,7 +147,9 @@ void stopLogging() {
 
 static void readTemperatures() {
   int32_t measuredVoltageUv;
+  
   double temperature;
+  double offsetVoltage;
   
   ambient = ambientSensor.readTempC16(AMBIENT) / 16.0;  // Read ambient temperature in C
   
@@ -161,6 +163,7 @@ static void readTemperatures() {
     } while(!thermocoupleAdc.measurementReady());
 
     measuredVoltageUv = thermocoupleAdc.getMeasurementUv();
+    offsetVoltage = measuredVoltageUv - GetJunctionVoltage(ambient);
     temperature = GetTypKTemp(measuredVoltageUv);
 
     if(temperature == OUT_OF_RANGE) {
