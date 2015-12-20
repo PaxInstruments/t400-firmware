@@ -323,10 +323,18 @@ void clear() {
 double GetJunctionVoltage(uint16_t jTemp) {
   // TODO use lookup table to determine the thermocouple voltage that corresponds
   // to the junction temperature.
-  return 0;
+  double offsetVoltage = 0;
+  int i = 0;
+
+  i = (int)((jTemp+270)/10);
+
+  offsetVoltage = tempTypK[i] + ((tempTypK[i+1] - tempTypK[i])/10) * (jTemp%10);
+  return offsetVoltage;
 }
 
 double GetTypKTemp(int32_t microVolts) {
+  // Input the junction temperature compensated voltage such that the junction
+  // temperature is compensated to 0°C
   microVolts += 6458; //Add an offset for the adjusted lookup table.
   // Check if it's in range
   if(microVolts > TEMP_TYPE_K_MAX_CONVERSION || microVolts < TEMP_TYPE_K_MIN_CONVERSION){  
