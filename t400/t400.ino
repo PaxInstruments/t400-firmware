@@ -147,9 +147,9 @@ void stopLogging() {
 
 static void readTemperatures() {
   int32_t measuredVoltageUv;
+  int32_t compensatedVoltage;
   
   double temperature;
-  double offsetVoltage;
   
   ambient = ambientSensor.readTempC16(AMBIENT) / 16.0;  // Read ambient temperature in C
   
@@ -162,20 +162,36 @@ static void readTemperatures() {
       delay(70);
     } while(!thermocoupleAdc.measurementReady());
 
-    measuredVoltageUv = thermocoupleAdc.getMeasurementUv();
-    offsetVoltage = measuredVoltageUv - GetJunctionVoltage(ambient);
-    temperature = GetTypKTemp(measuredVoltageUv);
+    measuredVoltageUv = thermocoupleAdc.getMeasurementUv() * MCP3424_OFFSET_CALIBRATION; // Calibration value: MCP3424_OFFSET_CALIBRATION
+    compensatedVoltage = measuredVoltageUv + GetJunctionVoltage(ambient);
+    temperature = GetTypKTemp(compensatedVoltage);
 
     if(temperature == OUT_OF_RANGE) {
       temperatures[channel] = OUT_OF_RANGE;
     }
     else {
-      temperatures[channel] = convertTemperature(temperature + ambient);
+ //     temperatures[channel] = convertTemperature(temperature + ambient);
+      temperatures[channel] = convertTemperature(temperature);
     }
+
+// This is some debugging code. Use it to display various values to the LCD.
+#if DEBUG_JUNCTION_TEMPERATURE
+    // Display debugging value on channel
+      temperatures[0] = ambient; // Display the back-calculated junction temperature voltage
+      temperatures[1] = GetJunctionVoltage(ambient); // Display the back-calculated junction temperature voltage
+    if(channel == 3 ){// != OUT_OF_RANGE){
+//      temperatures[channel] = ambient; // Display measured ambient temperature. Everything looks good here.
+//      temperatures[channel] = (double)measuredVoltageUv; // Display measured voltage across thermocouple. Everything looks good here.
+//      temperatures[channel] = GetJunctionVoltage(ambient); // Display the back-calculated junction temperature voltage
+//      temperatures[channel] = compensatedVoltage/1000; // Display junction-temperature-compensated thermocouple voltage
+//      temperatures[channel] = temperature; // Display the calculated temperature in C
+//      temperatures[channel] = convertTemperature(temperature + ambient); // Display the final temperature in the appropriate units
+    }
+#endif
   }
   
   // Finally, convert ambient to display units
-  ambient = convertTemperature(ambient);
+ // ambient = convertTemperature(ambient); // No need to convert. This does not appear on the display or serial outout.
 }
 
 static void writeOutputs() {

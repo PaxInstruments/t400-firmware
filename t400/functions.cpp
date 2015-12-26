@@ -9,7 +9,7 @@
 #include "functions.h"
 
 namespace Display {
-  
+
 // Graphical LCD
 U8GLIB_PI13264  u8g(LCD_CS, LCD_A0, LCD_RST); // Use HW-SPI
   
@@ -320,22 +320,33 @@ void clear() {
 
 }
 
-double GetJunctionVoltage(uint16_t jTemp) {
+int32_t GetJunctionVoltage(double jTemp) {
   // TODO use lookup table to determine the thermocouple voltage that corresponds
   // to the junction temperature.
-  double offsetVoltage = 0;
+
+  int32_t jVoltage = 1000; // This is an approximation for when 20 <= jTemp < 30
+
+// This some debugging code for implementing the TODO above
+#if DEBUG_JUNCTION_TEMPERATURE
+  jVoltage = 5;
   int i = 0;
 
-  i = (int)((jTemp+270)/10);
+  i = jTemp/10 + 27; // If ambient temperature is around 25C, this givest i = 29
 
-  offsetVoltage = tempTypK[i] + ((tempTypK[i+1] - tempTypK[i])/10) * (jTemp%10);
-  return offsetVoltage;
+  jVoltage = tempTypK[i]; // This is where the problem is. I don't know how to cast this properly.
+                          // jVoltage is int32_t. tempTypK[29] is uint16_t. If i equals 29, jVoltage
+                          // should be 7256. However, I keep getting 12336 on the LCD.
+
+//  jVoltage = (double)tempTypK[i] - TK_OFFSET + (jTemp - (int)jTemp)*(    (double)(tempTypK[i+1] - tempTypK[i])/( 10 )    );
+#endif
+
+  return jVoltage;
 }
 
 double GetTypKTemp(int32_t microVolts) {
   // Input the junction temperature compensated voltage such that the junction
   // temperature is compensated to 0°C
-  microVolts += 6458; //Add an offset for the adjusted lookup table.
+  microVolts += TK_OFFSET; //Add an offset for the adjusted lookup table.
   // Check if it's in range
   if(microVolts > TEMP_TYPE_K_MAX_CONVERSION || microVolts < TEMP_TYPE_K_MIN_CONVERSION){  
     return OUT_OF_RANGE;

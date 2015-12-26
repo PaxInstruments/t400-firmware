@@ -1,6 +1,12 @@
 // Hardware definitions for the t400
 #define __AVR_ATmega32U4__ 1
 
+// Calibration values
+#define MCP3424_OFFSET_CALIBRATION 1.00715
+
+// Debugging
+#define DEBUG_JUNCTION_TEMPERATURE 0
+
 // Compile-time settings. Some of these should be set by the user during operation.
 #define SYNC_INTERVAL    1000    // millis between calls to sync()
 

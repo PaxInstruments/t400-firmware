@@ -16,6 +16,7 @@
 // Note: if the table changes, update these by hand
 #define TEMP_TYPE_K_MIN_CONVERSION 0
 #define TEMP_TYPE_K_MAX_CONVERSION 61277
+#define TK_OFFSET 6458
 
 const uint16_t tempTypK[TEMP_TYPE_K_LENGTH] PROGMEM = 
 { 
