@@ -329,6 +329,7 @@ int32_t GetJunctionVoltage(double jTemp) {
 
   i = jTemp/10 + 27; // If ambient temperature is around 25C, this givest i = 29
   i=29; // ****** BUG BUG BUG Manually declare value BUG BUG BUG ******
+        // Commenting this out while debugging the LCD will display '12336'
         // If this line is commented out while DEBUG_JUNCTION_TEMPERATURE is enabled and
         // the LCD displays 7256, this function should work properly.
   
