@@ -324,22 +324,22 @@ int32_t GetJunctionVoltage(double jTemp) {
   // TODO use lookup table to determine the thermocouple voltage that corresponds
   // to the junction temperature.
 
-  int32_t jVoltage = 1000; // This is an approximation for when 20 <= jTemp < 30
-
-// This some debugging code for implementing the TODO above
-#if DEBUG_JUNCTION_TEMPERATURE
-  jVoltage = 5;
+  int32_t jVoltage = 0;
   int i = 0;
 
   i = jTemp/10 + 27; // If ambient temperature is around 25C, this givest i = 29
-
-  jVoltage = tempTypK[i]; // This is where the problem is. I don't know how to cast this properly.
-                          // jVoltage is int32_t. tempTypK[29] is uint16_t. If i equals 29, jVoltage
-                          // should be 7256. However, I keep getting 12336 on the LCD.
-
-//  jVoltage = (double)tempTypK[i] - TK_OFFSET + (jTemp - (int)jTemp)*(    (double)(tempTypK[i+1] - tempTypK[i])/( 10 )    );
+  i=29; // ****** BUG BUG BUG Manually declare value BUG BUG BUG ******
+        // If this line is commented out while DEBUG_JUNCTION_TEMPERATURE is enabled and
+        // the LCD displays 7256, this function should work properly.
+  
+#if DEBUG_JUNCTION_TEMPERATURE
+  jVoltage = tempTypK[i]; // Should always give jVoltage as 7256 on the LCD
+#else
+  jVoltage = tempTypK[i] - TK_OFFSET + (jTemp - (i*10-270)) * (tempTypK[i+1] - tempTypK[i])/10;
 #endif
 
+//  return i; // Displays '29.0' on the LCD as expected
+//  return tempTypK[29]; // Displays '7256.0'on LCD
   return jVoltage;
 }
 

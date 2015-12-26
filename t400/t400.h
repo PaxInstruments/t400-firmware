@@ -2,7 +2,7 @@
 #define __AVR_ATmega32U4__ 1
 
 // Calibration values
-#define MCP3424_OFFSET_CALIBRATION 1.00715
+#define MCP3424_OFFSET_CALIBRATION 1.00
 
 // Debugging
 #define DEBUG_JUNCTION_TEMPERATURE 0
