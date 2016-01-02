@@ -336,7 +336,7 @@ int32_t GetJunctionVoltage(double* jTemp) {
 #if DEBUG_JUNCTION_TEMPERATURE
   jVoltage = tempTypK[i]; // Should always give jVoltage as 7256 on the LCD
 #else
-  jVoltage = tempTypK[i] - TK_OFFSET + (jTemp - (i*10-270)) * (tempTypK[i+1] - tempTypK[i])/10;
+  jVoltage = tempTypK[i] - TK_OFFSET + (*jTemp - (i*10-270)) * (tempTypK[i+1] - tempTypK[i])/10;
 #endif
 
 //  return i; // Displays '29.0' on the LCD as expected
