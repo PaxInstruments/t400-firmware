@@ -5,7 +5,7 @@
 #define MCP3424_OFFSET_CALIBRATION 1.00
 
 // Debugging
-#define DEBUG_JUNCTION_TEMPERATURE 0
+#define DEBUG_JUNCTION_TEMPERATURE 1
 
 // Compile-time settings. Some of these should be set by the user during operation.
 #define SYNC_INTERVAL    1000    // millis between calls to sync()
