@@ -163,7 +163,7 @@ static void readTemperatures() {
     } while(!thermocoupleAdc.measurementReady());
 
     measuredVoltageUv = thermocoupleAdc.getMeasurementUv() * MCP3424_OFFSET_CALIBRATION; // Calibration value: MCP3424_OFFSET_CALIBRATION
-    compensatedVoltage = measuredVoltageUv + GetJunctionVoltage(ambient);
+    compensatedVoltage = measuredVoltageUv + GetJunctionVoltage(&ambient);
     temperature = GetTypKTemp(compensatedVoltage);
 
     if(temperature == OUT_OF_RANGE) {
@@ -178,7 +178,7 @@ static void readTemperatures() {
 #if DEBUG_JUNCTION_TEMPERATURE
     // Display debugging value on channel
       temperatures[0] = ambient; // Display the back-calculated junction temperature voltage
-      temperatures[1] = GetJunctionVoltage(ambient); // Display the back-calculated junction temperature voltage
+      temperatures[1] = GetJunctionVoltage(&ambient); // Display the back-calculated junction temperature voltage
     if(channel == 3 ){// != OUT_OF_RANGE){
 //      temperatures[channel] = ambient; // Display measured ambient temperature. Everything looks good here.
 //      temperatures[channel] = (double)measuredVoltageUv; // Display measured voltage across thermocouple. Everything looks good here.
