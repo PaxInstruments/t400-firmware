@@ -3,7 +3,6 @@
 
 // Macro for accessing thermocouple data
 #define lookupThermocouleData(index) (pgm_read_dword(tempTypK + index))
-#define lookupVoltageData(index) (pgm_read_dword(tempTypK + index))
 
 // Note: if switching to eeprom, could look like this instead:
 //  #define lookupThermocouleData(index) (eeprom_read_dword(index));

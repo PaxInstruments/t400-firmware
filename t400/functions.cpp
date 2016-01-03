@@ -326,8 +326,8 @@ int32_t GetJunctionVoltage(double* jTemp) {
 
   i = *jTemp/10 + 27;
 
-  uint16_t valueLow = lookupVoltageData(i);
-  uint16_t valueHigh = lookupVoltageData(i + 1);
+  uint16_t valueLow = lookupThermocouleData(i);
+  uint16_t valueHigh = lookupThermocouleData(i + 1);
 
   jVoltage = valueLow - TK_OFFSET + (*jTemp - (i*10-270)) * (valueHigh - valueLow)/10;
 
