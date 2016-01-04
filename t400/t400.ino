@@ -162,7 +162,7 @@ static void readTemperatures() {
       delay(70);
     } while(!thermocoupleAdc.measurementReady());
 
-    measuredVoltageUv = thermocoupleAdc.getMeasurementUv() * MCP3424_OFFSET_CALIBRATION; // Calibration value: MCP3424_OFFSET_CALIBRATION
+    measuredVoltageUv = thermocoupleAdc.getMeasurementUv() * MCP3424_CALIBRATION_MULTIPLY + MCP3424_CALIBRATION_ADD; // Calibration value: MCP3424_OFFSET_CALIBRATION
     compensatedVoltage = measuredVoltageUv + GetJunctionVoltage(&ambient);
     temperature = GetTypKTemp(compensatedVoltage);
 
@@ -177,11 +177,11 @@ static void readTemperatures() {
 // This is some debugging code. Use it to display various values to the LCD.
 #if DEBUG_JUNCTION_TEMPERATURE
     // Display debugging value on channel
-      temperatures[0] = ambient; // Display the back-calculated junction temperature voltage
-      temperatures[1] = GetJunctionVoltage(&ambient); // Display the back-calculated junction temperature voltage
-    if(channel == 3 ){// != OUT_OF_RANGE){
+//      temperatures[0] = ambient; // Display the back-calculated junction temperature voltage
+//      temperatures[1] = GetJunctionVoltage(&ambient); // Display the back-calculated junction temperature voltage
+    if(channel == 2 ){// != OUT_OF_RANGE){
 //      temperatures[channel] = ambient; // Display measured ambient temperature. Everything looks good here.
-//      temperatures[channel] = (double)measuredVoltageUv; // Display measured voltage across thermocouple. Everything looks good here.
+      temperatures[channel] = (double)measuredVoltageUv; // Display measured voltage across thermocouple. Everything looks good here.
 //      temperatures[channel] = GetJunctionVoltage(ambient); // Display the back-calculated junction temperature voltage
 //      temperatures[channel] = compensatedVoltage/1000; // Display junction-temperature-compensated thermocouple voltage
 //      temperatures[channel] = temperature; // Display the calculated temperature in C
