@@ -1,11 +1,18 @@
-#ifdef SDCARD
-#include <SdFat.h>
-#else
 #include "Arduino.h"  // for boolean type
-#endif
+
 
 #include "t400.h"
 #include "sd_log.h"
+
+// comment this next line out to disable ALL SD card functionality, but substantially free up nearly 8k of flash space.
+#define SDCARD 1
+//before 28656 - after 20396  = 8260
+
+
+#ifdef SDCARD
+#include <SdFat.h>
+#endif
+
 
 extern uint8_t temperatureUnit;
 
