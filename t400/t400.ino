@@ -22,7 +22,7 @@ Firmware for the Pax Instruments T400 temperature datalogger
 
 // comment this next line out to disable ALL SD card functionality, but substantially free up nearly 5k of flash space.
 #define SDCARD 1
-//before 28656 - after 23620  = 5036
+//before 28656 - after 20396  = 8260
 
 // Import libraries
 #include "t400.h"             // Board definitions
@@ -43,9 +43,7 @@ Firmware for the Pax Instruments T400 temperature datalogger
 #include "buttons.h"          // User buttons
 #include "typek_constant.h"   // Thermocouple calibration table
 #include "functions.h"        // Misc. functions
-#ifdef SDCARD
 #include "sd_log.h"           // SD card utilities
-#endif
 #define BUFF_MAX         80   // Size of the character buffer
 
 
@@ -144,10 +142,8 @@ void startLogging() {
     return;
   }
 
-  #ifdef SDCARD
   sd::init();
   logging = sd::open(fileName);
-  #endif
 }
 
 void stopLogging() {
