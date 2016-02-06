@@ -20,12 +20,19 @@ Firmware for the Pax Instruments T400 temperature datalogger
 
 */
 
+// comment this next line out to disable ALL SD card functionality, but substantially free up nearly 5k of flash space.
+#define SDCARD 1
+//before 28656 - after 23620  = 5036
+
 // Import libraries
 #include "t400.h"             // Board definitions
 
 #include <Wire.h>       // i2c
 #include <SPI.h>
+
+#ifdef SDCARD
 #include <SdFat.h>
+#endif
 
 #include "U8glib.h"     // LCD
 #include <MCP3424.h>    // ADC
@@ -36,12 +43,17 @@ Firmware for the Pax Instruments T400 temperature datalogger
 #include "buttons.h"          // User buttons
 #include "typek_constant.h"   // Thermocouple calibration table
 #include "functions.h"        // Misc. functions
+#ifdef SDCARD
 #include "sd_log.h"           // SD card utilities
-
+#endif
 #define BUFF_MAX         80   // Size of the character buffer
 
 
+#ifdef SDCARD
 char fileName[] =        "LD0001.CSV";
+#else
+char fileName[] =        ""; // leave the variable for convenience, just empty it.
+#endif
 
 // MCP3424 for thermocouple measurements
 MCP3424      thermocoupleAdc(MCP3424_ADDR, MCP342X_GAIN_X8, MCP342X_16_BIT);  // address, gain, resolution
@@ -132,8 +144,10 @@ void startLogging() {
     return;
   }
 
+  #ifdef SDCARD
   sd::init();
   logging = sd::open(fileName);
+  #endif
 }
 
 void stopLogging() {
@@ -142,7 +156,9 @@ void stopLogging() {
   }
   
   logging = false;
+  #ifdef SDCARD
   sd::close();
+  #endif
 }
 
 static void readTemperatures() {
@@ -221,7 +237,9 @@ static void writeOutputs() {
   Serial.println(updateBuffer);
 
   if(logging) {
+    #ifdef SDCARD
     logging = sd::log(updateBuffer);
+    #endif
   }
 }
 
