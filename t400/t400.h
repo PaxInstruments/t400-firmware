@@ -64,5 +64,8 @@
 #define LCD_CS              A4
 #define LCD_BACKLIGHT_PIN   A5   // LCD backlight on pin
 
+// comment this next line out to disable ALL SD card functionality, but substantially free up nearly 8k of flash space.
+#define SDCARD 1
+
 
 #define LCD_CONTRAST     0x018*7  // Sets the LCD contrast
