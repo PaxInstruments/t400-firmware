@@ -1,25 +1,25 @@
 // Hardware definitions for the t400
 #define __AVR_ATmega32U4__ 1
 
+// Feature settings
+#define SD_LOGGING_ENABLED 1  // Enable/disable all SD card functionality
+
 // Calibration values
 #define MCP3424_CALIBRATION_MULTIPLY 1.00713
 #define MCP3424_CALIBRATION_ADD 5.826
-
+#define LCD_CONTRAST     0x018*7  // Sets the LCD contrast
 
 // Debugging
 #define DEBUG_JUNCTION_TEMPERATURE 0
 
 // Compile-time settings. Some of these should be set by the user during operation.
 #define SYNC_INTERVAL    1000    // millis between calls to sync()
-
 #define SENSOR_COUNT     4       // Number of sensors on the board (fixed)
-
 #define OUT_OF_RANGE     99999.9 // Double value representing an invalid temp. measurement
 #define GRAPH_INVALID    -127    // Invalid graph point
 
 // Graph display settings
 #define MAXIMUM_GRAPH_POINTS    100
-
 #define DISPLAY_HEIGHT  64    // Height of the display
 #define CHARACTER_SPACING 5   // Width of a character+space to next character
 
@@ -28,7 +28,6 @@
 #define TEMPERATURE_UNITS_K  2
 #define TEMPERATURE_UNITS_COUNT 3
 #define GRAPH_CHANNELS_COUNT 5
-
 
 /// I2C addresses
 #define MCP3424_ADDR    0x69
@@ -64,8 +63,3 @@
 #define LCD_CS              A4
 #define LCD_BACKLIGHT_PIN   A5   // LCD backlight on pin
 
-// comment this next line out to disable ALL SD card functionality, but substantially free up nearly 8k of flash space.
-#define SDCARD 1
-
-
-#define LCD_CONTRAST     0x018*7  // Sets the LCD contrast

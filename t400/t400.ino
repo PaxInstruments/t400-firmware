@@ -262,6 +262,7 @@ void loop() {
       }
     }
     else if(button == Buttons::BUTTON_A) { // Start/stop logging
+      #if SD_LOGGING_ENABLED
       if(!logging) {
         startLogging();
       }
@@ -270,6 +271,7 @@ void loop() {
       }
       resetTicks();
         needsRefresh = true;
+      #endif
     }
     else if(button == Buttons::BUTTON_B) { // Cycle log interval
       if(!logging) {

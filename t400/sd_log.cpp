@@ -5,7 +5,7 @@
 #include "sd_log.h"
 
 
-#ifdef SDCARD
+#if SD_LOGGING_ENABLED
 #include <SdFat.h>
 #endif
 
@@ -14,7 +14,7 @@ extern uint8_t temperatureUnit;
 
 namespace sd {
 
-#ifdef SDCARD
+#if SD_LOGGING_ENABLED
 SdFat sd;
 SdFile file;
 #endif
@@ -31,7 +31,7 @@ uint32_t syncTime      = 0;     // time of last sync(), in millis()
 
 void init() {
   close();
-  #ifdef SDCARD
+  #if SD_LOGGING_ENABLED
   if (!sd.begin(SD_CS, SPI_FULL_SPEED)) {
 //    error_P("card.init");
     return;
@@ -42,7 +42,7 @@ void init() {
 bool open(char* fileName) {
   // Create LDxxxx.CSV for the lowest value of x.
 
-  #ifdef SDCARD
+  #if SD_LOGGING_ENABLED
   uint16_t i = 0;
   do {
     fileName[2] = (i/1000) % 10 + '0';
@@ -96,7 +96,7 @@ bool open(char* fileName) {
   }*/
 
   for (uint8_t i = 0; i < SENSOR_COUNT; i++) {
-    #ifdef SDCARD
+    #if SD_LOGGING_ENABLED
     file.print(", temp_");
     file.print(i, DEC);
     #endif
@@ -106,32 +106,32 @@ bool open(char* fileName) {
     
     switch(temperatureUnit) {
     case TEMPERATURE_UNITS_C:
-      #ifdef SDCARD
+      #if SD_LOGGING_ENABLED
       file.print(" (C)");
       #endif
       Serial.print(" (C)");
       break;
     case TEMPERATURE_UNITS_F:
-      #ifdef SDCARD
+      #if SD_LOGGING_ENABLED
       file.print(" (F)");
       #endif
       Serial.print(" (F)");
       break;
     case TEMPERATURE_UNITS_K:
-      #ifdef SDCARD
+      #if SD_LOGGING_ENABLED
       file.print(" (K)");
       #endif
       Serial.print(" (K)");
       break;
     }
   }
-  #ifdef SDCARD
+  #if SD_LOGGING_ENABLED
   file.println();
   file.flush();
   #endif
   Serial.println();
 
-  #ifdef SDCARD
+  #if SD_LOGGING_ENABLED
   return (file.getWriteError() == false);
   #else
     return true;
@@ -139,7 +139,7 @@ bool open(char* fileName) {
 }
 
 void close() {
-  #ifdef SDCARD
+  #if SD_LOGGING_ENABLED
   file.close();
   #endif
 }
@@ -148,13 +148,13 @@ bool log(char* message) {
   // TODO: Test if file is open first
   
   // log time to file
-  #ifdef SDCARD
+  #if SD_LOGGING_ENABLED
   file.println(message);
   #endif
 
   sync(false);
 
-  #ifdef SDCARD
+  #if SD_LOGGING_ENABLED
   return (file.getWriteError() == false);
   #else
     return true;
@@ -171,7 +171,7 @@ void sync(boolean force) {
   }
   
   syncTime = millis();
-  #ifdef SDCARD
+  #if SD_LOGGING_ENABLED
   file.flush();
   #endif
 }
