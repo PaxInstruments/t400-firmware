@@ -77,7 +77,7 @@ void rotateTemperatureUnit() {
 
   // Reset the graph so we don't have to worry about scaling it
   Display::resetGraph();
-  
+
   // TODO: Convert the current data to new units?
 }
 
@@ -98,17 +98,18 @@ double convertTemperature(double Celcius) {
 void setup(void) {
   Power::setup();
   ChargeStatus::setup();
-
+  #if SERIAL_OUTPUT_ENABLED
   Serial.begin(9600);
-  
+  #endif
+
   Wire.begin(); // Start using the Wire library; does the i2c communication.
-  
+
   Backlight::setup();
   Backlight::set(backlightEnabled);
-  
+
   Display::setup();
   Display::resetGraph();
-  
+
   thermocoupleAdc.begin();
 
   ambientSensor.begin();
@@ -117,7 +118,7 @@ void setup(void) {
   // Set up the RTC to generate a 1 Hz signal
   pinMode(RTC_INT, INPUT);
   DS3231_init(0);
-  
+
   // And configure the atmega to interrupt on falling edge of the 1 Hz signal
   EICRA |= _BV(ISC21);    // Configure INT2 to trigger on falling edge
   EIMSK |= _BV(INT2);    // and enable the INT2 interrupt
@@ -138,7 +139,7 @@ void stopLogging() {
   if(!logging) {
     return;
   }
-  
+
   logging = false;
   sd::close();
 }
@@ -146,11 +147,11 @@ void stopLogging() {
 static void readTemperatures() {
   int32_t measuredVoltageUv;
   int32_t compensatedVoltage;
-  
+
   double temperature;
-  
+
   ambient = ambientSensor.readTempC16(AMBIENT) / 16.0;  // Read ambient temperature in C
-  
+
   // ADC read loop: Start a measurement, wait until it is finished, then record it
   for(uint8_t channel = 0; channel < SENSOR_COUNT; channel++) {
     thermocoupleAdc.startMeasurement(temperatureChannels[channel]);
@@ -174,38 +175,18 @@ static void readTemperatures() {
 
 // This is some debugging code. Use it to display various values to the LCD.
 #if DEBUG_JUNCTION_TEMPERATURE
-    // Display debugging value on channel
-//      temperatures[0] = ambient; // Display the back-calculated junction temperature voltage
-//      temperatures[1] = GetJunctionVoltage(&ambient); // Display the back-calculated junction temperature voltage
     if(channel == 2 ){// != OUT_OF_RANGE){
-//      temperatures[channel] = ambient; // Display measured ambient temperature. Everything looks good here.
       temperatures[channel] = (double)measuredVoltageUv; // Display measured voltage across thermocouple. Everything looks good here.
-//      temperatures[channel] = GetJunctionVoltage(ambient); // Display the back-calculated junction temperature voltage
-//      temperatures[channel] = compensatedVoltage/1000; // Display junction-temperature-compensated thermocouple voltage
-//      temperatures[channel] = temperature; // Display the calculated temperature in C
-//      temperatures[channel] = convertTemperature(temperature + ambient); // Display the final temperature in the appropriate units
     }
 #endif
   }
-  
-  // Finally, convert ambient to display units
- // ambient = convertTemperature(ambient); // No need to convert. This does not appear on the display or serial outout.
 }
 
 static void writeOutputs() {
   static char updateBuffer[BUFF_MAX];      // Scratch buffer to write serial/sd output into
- 
-  // Avoid snprintf() to save 1.4k space 
-//  snprintf(updateBuffer, BUFF_MAX, "%02d:%02d:%02d, ", rtcTime.hour, rtcTime.min, rtcTime.sec);
+
   dtostrf(logTimeSeconds, 8,0, updateBuffer + 0);
-//  dtostrf(rtcTime.hour, 2, 0, updateBuffer + 0);
-//  dtostrf(rtcTime.min,  2, 0, updateBuffer + 3);
-//  dtostrf(rtcTime.sec,  2, 0, updateBuffer + 6);
-//  dtostrf(ambient,      1, 2, updateBuffer + 10);
-//  updateBuffer[2] = updateBuffer[5] = ':';
-//  updateBuffer[8] = ',';
-//  updateBuffer[9] = ' ';
- 
+
   for(uint8_t i = 0; i < SENSOR_COUNT; i++) {
     if(temperatures[i] == OUT_OF_RANGE) {
       strcpy(updateBuffer+strlen(updateBuffer), ", -");
@@ -215,8 +196,9 @@ static void writeOutputs() {
       dtostrf(temperatures[i], 0, 2, updateBuffer+strlen(updateBuffer));
     }
   }
-
+  #if SERIAL_OUTPUT_ENABLED
   Serial.println(updateBuffer);
+  #endif
 
   if(logging) {
     logging = sd::log(updateBuffer);
@@ -236,7 +218,7 @@ void resetTicks() {
 // Updating the screen
 void loop() {
   bool needsRefresh = false;  // If true, the display needs to be updated
-  
+
   if(timeToSample) {
     timeToSample = false;
 
@@ -246,16 +228,15 @@ void loop() {
 
     writeOutputs();
     Display::updateGraph(temperatures);
-    
+
     needsRefresh = true;
   }
-  
+
   if(Buttons::pending()) {
     uint8_t button = Buttons::getPending();
-    
+
     if(button == Buttons::BUTTON_POWER) { // Disable power
       if(!logging) {
-//        Serial.print("Powering off!\n");
         Display::clear();
         Backlight::set(0);
         Power::shutdown();
@@ -277,7 +258,7 @@ void loop() {
       if(!logging) {
         logInterval = (logInterval + 1) % LOG_INTERVAL_COUNT;
         resetTicks();
-        
+
         Display::resetGraph();  // Reset the graph, to keep the x axis consistent
         resetTicks();
         needsRefresh = true;
@@ -302,7 +283,7 @@ void loop() {
       Backlight::set(backlightEnabled);
     }
   }
-  
+
   // If we are charging, refresh the display every second to make the charging animation
   if(ChargeStatus::get() == ChargeStatus::CHARGING) {
     if(lastIsrTick != isrTick) {
@@ -310,8 +291,8 @@ void loop() {
       lastIsrTick = isrTick;
     }
   }
-  
-  if(needsRefresh) {    
+
+  if(needsRefresh) {
     if(logging) {
       Display::draw(
         temperatures,
@@ -326,7 +307,7 @@ void loop() {
     }
     else {
       Display::draw(
-        temperatures, 
+        temperatures,
        // ambient,
         graphChannel,
         temperatureUnit,
@@ -337,7 +318,7 @@ void loop() {
       );
     }
   }
-  
+
   // Sleep if we are on battery power
   // Note: Don't sleep if there is power, in case we need to communicate over USB
   if(ChargeStatus::get() == ChargeStatus::DISCHARGING) {
@@ -351,9 +332,8 @@ ISR(INT2_vect)
 {
   isrTick = (isrTick + 1)%(logIntervals[logInterval]);
   logTimeSeconds++;
-  
+
   if(isrTick == 0) {
     timeToSample = true;
   }
 }
-

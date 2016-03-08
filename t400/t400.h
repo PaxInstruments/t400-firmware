@@ -2,7 +2,8 @@
 #define __AVR_ATmega32U4__ 1
 
 // Feature settings
-#define SD_LOGGING_ENABLED 1  // Enable/disable all SD card functionality
+#define SD_LOGGING_ENABLED 1  // Enable/disable all SD card functionality. Saves 8,696 bytes
+#define SERIAL_OUTPUT_ENABLED 1  // Enable/disable serial output functionality. Saves 192 bytes
 
 // Calibration values
 #define MCP3424_CALIBRATION_MULTIPLY 1.00713
@@ -34,7 +35,7 @@
 
 // Pin definitions for Electronics version 0.13
 #define pcbVersion ".13" // Electronics version 0.12 milestone.
-#define FIRMWARE_VERSION "0.14-beta"
+#define FIRMWARE_VERSION "0.15"
 
 // Pin definitions
 #define BUTTON_B_PIN         1  // 0.12-mod 7, 0.13 1
@@ -62,4 +63,3 @@
 #define LCD_RST             A3
 #define LCD_CS              A4
 #define LCD_BACKLIGHT_PIN   A5   // LCD backlight on pin
-
