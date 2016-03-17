@@ -27,7 +27,7 @@ Firmware for the Pax Instruments T400 temperature datalogger
 #include <Wire.h>       // i2c
 #include <SPI.h>
 
-#include "U8glib.h"     // LCD
+#include "PaxInstruments-U8glib.h"     // LCD
 #include <MCP3424.h>    // ADC
 #include <MCP980X.h>    // Ambient/junction temperature sensor
 #include <ds3231.h>     // RTC

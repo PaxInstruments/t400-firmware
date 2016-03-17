@@ -3,7 +3,7 @@
 #include <avr/io.h>
 
 #include <Arduino.h>
-#include "U8glib.h" // LCD
+#include "PaxInstruments-U8glib.h" // LCD
 #include "typek_constant.h"
 #include "t400.h"
 #include "functions.h"

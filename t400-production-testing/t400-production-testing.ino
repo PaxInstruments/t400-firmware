@@ -5,7 +5,7 @@
 #include "t400.h"  // T400 hardware definitions
 #include <SPI.h>  // Arduino SPI library ( http://arduino.cc/en/Reference/SPI )
 #include <Wire.h>  // For i2c ( http://arduino.cc/en/Reference/Wire )
-#include "U8glib.h"  // Graphics library ( https://github.com/PaxInstruments/u8glib )
+#include "PaxInstruments-U8glib.h"  // Graphics library ( https://github.com/PaxInstruments/PaxInstruments-U8glib )
 #include <Fat16.h>  // Fat16 SD card library ( https://github.com/PaxInstruments/Fat16 )
 #include <Fat16util.h>  // use functions to print strings from flash memory
 #include <MCP980X.h>  // For MCP9800 ( https://github.com/PaxInstruments/MCP980X )

@@ -44,7 +44,7 @@
 #define PWR_ONOFF_PIN       30   // Power on/off pin turns board power off (active high)
 #define LCD_CONTRAST     0x018*7  // Sets the LCD contrast
 
-#include "U8glib.h"
+#include "PaxInstruments-U8glib.h"
 U8GLIB_PI13264  u8g(LCD_CS, LCD_A0, LCD_RST); // Use HW-SPI5, CS = 8, A0 = 9, RESET = 7 (Freetronics OLED)
 
 void u8g_prepare(void) {
