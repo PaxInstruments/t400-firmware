@@ -6,7 +6,7 @@ Firmware for the Pax Instruments T400 temperature datalogger
 ## Setup
 1. Install the Arduino IDE from http://arduino.cc/en/Main/Software. This code is developed using Arduino IDE 1.6.7.
 2. Install the following Arduino libraries. You will have to rename folders to remove '-main' form the end. For example, u8glib-main must be renamed to u8glib.
-  - U8Glib graphical LCD https://github.com/PaxInstruments/u8glib. This repository contains Pax Instruments specific code.
+  - U8Glib graphical LCD https://github.com/PaxInstruments/PaxInstruments-U8glib. This repository contains Pax Instruments specific code.
   - MCP3424 ADC https://github.com/PaxInstruments/MCP3424
   - MCP980X temperature sensor https://github.com/PaxInstruments/MCP980X
   - DS3231 RTC https://github.com/PaxInstruments/ds3231
