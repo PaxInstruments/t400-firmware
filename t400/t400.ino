@@ -48,7 +48,7 @@ MCP980X ambientSensor(0);      // Ambient temperature sensor
 
 
 const uint8_t temperatureChannels[SENSOR_COUNT] = {1, 0, 3, 2};  // Map of ADC inputs to thermocouple channels
-double temperatures[SENSOR_COUNT];  // Current temperature of each thermocouple input
+float temperatures[SENSOR_COUNT];  // Current temperature of each thermocouple input
 double ambient =  0;        // Ambient temperature
 
 boolean backlightEnabled = true;
@@ -227,7 +227,8 @@ void loop() {
 //    DS3231_get(&rtcTime);
 
     writeOutputs();
-    Display::updateGraph(temperatures);
+    Display::updateGraphData(temperatures);
+    Display::updateGraphScaling();
 
     needsRefresh = true;
   }
