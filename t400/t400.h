@@ -1,41 +1,42 @@
 // Hardware definitions for the t400
-#define __AVR_ATmega32U4__ 1
+#define __AVR_ATmega32U4__      1
 
 // Feature settings
-#define SD_LOGGING_ENABLED 1  // Enable/disable all SD card functionality. Saves 8,696 bytes
-#define SERIAL_OUTPUT_ENABLED 1  // Enable/disable serial output functionality. Saves 192 bytes
+#define SD_LOGGING_ENABLED      1  // Enable/disable all SD card functionality. Saves 8,696 bytes
+#define SERIAL_OUTPUT_ENABLED   1  // Enable/disable serial output functionality. Saves 192 bytes
 
 // Calibration values
-#define MCP3424_CALIBRATION_MULTIPLY 1.00713
-#define MCP3424_CALIBRATION_ADD 5.826
-#define LCD_CONTRAST     0x018*7  // Sets the LCD contrast
+#define MCP3424_CALIBRATION_MULTIPLY    1.00713
+#define MCP3424_CALIBRATION_ADD         5.826
+#define LCD_CONTRAST                    0x018*7  // Sets the LCD contrast
 
 // Debugging
-#define DEBUG_JUNCTION_TEMPERATURE 0
+#define DEBUG_JUNCTION_TEMPERATURE  0
 
 // Compile-time settings. Some of these should be set by the user during operation.
-#define SYNC_INTERVAL    1000    // millis between calls to sync()
-#define SENSOR_COUNT     4       // Number of sensors on the board (fixed)
-#define OUT_OF_RANGE     99999.9 // Double value representing an invalid temp. measurement
-#define GRAPH_INVALID    -32760  // Invalid graph point
+#define SYNC_INTERVAL           1000       // millis between calls to sync()
+#define SENSOR_COUNT            4          // Number of sensors on the board (fixed)
+#define OUT_OF_RANGE_INT        9999       // Int value representing an invalid temp. measurement
+#define OUT_OF_RANGE            999.9      // Double value representing an invalid temp. measurement
 
 // Graph display settings
 #define MAXIMUM_GRAPH_POINTS    100
-#define DISPLAY_HEIGHT  64    // Height of the display
-#define CHARACTER_SPACING 5   // Width of a character+space to next character
+#define DISPLAY_HEIGHT          64    // Height of the display
+#define CHARACTER_SPACING       5   // Width of a character+space to next character
 
-#define TEMPERATURE_UNITS_C  0
-#define TEMPERATURE_UNITS_F  1
-#define TEMPERATURE_UNITS_K  2
+#define TEMPERATURE_UNITS_C     0
+#define TEMPERATURE_UNITS_F     1
+#define TEMPERATURE_UNITS_K     2
 #define TEMPERATURE_UNITS_COUNT 3
-#define GRAPH_CHANNELS_COUNT 5
+
+#define GRAPH_CHANNELS_COUNT    5
 
 /// I2C addresses
-#define MCP3424_ADDR    0x69
+#define MCP3424_ADDR        0x69
 
 // Pin definitions for Electronics version 0.13
-#define pcbVersion ".13" // Electronics version 0.12 milestone.
-#define FIRMWARE_VERSION "0.15"
+#define pcbVersion          ".13" // Electronics version 0.12 milestone.
+#define FIRMWARE_VERSION    "0.15"
 
 // Pin definitions
 #define BUTTON_B_PIN         1  // 0.12-mod 7, 0.13 1
