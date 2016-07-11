@@ -11,9 +11,7 @@
 
 namespace Display {
 
-#define TEMP_MAX_VALUE_F    (3276.0)
 #define TEMP_MAX_VALUE_I    (32760)
-#define TEMP_MIN_VALUE_F    (-3276.0)
 #define TEMP_MIN_VALUE_I    (-32760)
 
 #define LINE_COUNT          4
@@ -38,8 +36,9 @@ uint32_t graphScale;    // Number of degrees per pixel in the graph[] array.
 
 uint8_t axisDigits;     // Number of digits to display in the axis labels (ex: '80' -> 2, '1000' -> 4, '-999' -> 4)
 
-float maxTemp = TEMP_MIN_VALUE_F;
-float minTemp = TEMP_MAX_VALUE_F;
+
+int16_t minTempInt;
+int16_t maxTempInt;
 
 // Get a reference to the graph point at the specified 
 // uint8_t& graphPoint(uint8_t sensor, uint8_t point)
@@ -58,10 +57,11 @@ float minTemp = TEMP_MAX_VALUE_F;
 #define temperatureToGraphPoint(temperature, scale, min) (DISPLAY_HEIGHT - 3 - (temperature-min)/scale*10)
 //#define rescaleGraphPoint(point, originalScale, originalMin, newScale, newMin) ((point - ))
 
-// Helper macros to go between int and float
-#define float_to_int(D) ((int16_t)((D)*10))
-#define int_to_float(D) (((float)(D))/10.0)
-
+// Helper functions
+// Prints a fixed point temperture and returns pointer to buffer
+#define printtemp(B,T)  (sprintf((B),"%d.%d",((T)/10),((T)%10)),(B))
+// Prints an int and returns the pointer to buffer
+#define printi(B,I)   (sprintf(buf,"%d",(I)),(B))
 
 void resetGraph()
 {
@@ -83,10 +83,8 @@ void resetGraph()
 }
 
 // Update the graph using temperatures[NUM_SENSORS]
-void updateGraphData(float* temperatures)
+void updateGraphData(int16_t* temperatures)
 {
-    int16_t temp_int;
-
     // Increment the current graph point (it wraps around)
     if(graphCurrentPoint == 0)
     {
@@ -105,8 +103,7 @@ void updateGraphData(float* temperatures)
     // a degree
     for(uint8_t sensor = 0; sensor < SENSOR_COUNT; sensor++)
     {
-        temp_int = float_to_int(temperatures[sensor]);
-        graph[sensor][(graphCurrentPoint%MAXIMUM_GRAPH_POINTS)] = temp_int;
+        graph[sensor][(graphCurrentPoint%MAXIMUM_GRAPH_POINTS)] = temperatures[sensor];
     }
 
   return;
@@ -139,17 +136,17 @@ void updateGraphScaling()
   if(max==TEMP_MIN_VALUE_I) max=0;
   if(min==TEMP_MAX_VALUE_I) min=0;
 
-  minTemp = int_to_float(min);
-  maxTemp = int_to_float(max);
+  minTempInt = min;
+  maxTempInt = max;
   delta = max - min;
-  if(delta<4) maxTemp=minTemp+4.0;
+  if(delta<4) maxTempInt=minTempInt+4;
 
   graphScale = (uint32_t)((delta + 39) / 40);  // TODO: better rounding strategy
   if(graphScale<=0) graphScale = 1;
 
   // graphScale is an int multiplier.  Normally we display 4 temperatures.
-  // maxTemp is the highest temp in the dataset
-  // minTemp is the lowest temp in the dataset
+  // maxTempInt is the highest temp in the dataset
+  // minTempInt is the lowest temp in the dataset
 
   // Calculate the number of axes digits to display
   axisDigits = 2;
@@ -165,15 +162,16 @@ void updateGraphScaling()
 
 void setup()
 {
-  u8g.setContrast(LCD_CONTRAST); // Set contrast level
-  u8g.setRot180(); // Rotate screen
-  u8g.setColorIndex(1); // Set color mode to binary
-  u8g.setFont(u8g_font_5x8r); // Select font. See https://code.google.com/p/u8glib/wiki/fontsize
+  u8g.setContrast(LCD_CONTRAST);    // Set contrast level
+  u8g.setRot180();                  // Rotate screen
+  u8g.setColorIndex(1);             // Set color mode to binary
+  u8g.setFont(u8g_font_5x8r);       // Select font. See https://code.google.com/p/u8glib/wiki/fontsize
+  return;
 }
 
 
 void draw(
-  float* temperatures,
+  int16_t* temperatures,
   uint8_t graphChannel,
   uint8_t temperatureUnit,
   char* fileName,
@@ -209,8 +207,8 @@ void draw(
       for(uint8_t interval = 0; interval < GRAPH_INTERVALS; interval++)
       {
         u8g.drawPixel(CHARACTER_SPACING*axisDigits + 1, 61 - interval*10);
-
-        u8g.drawStr(0, DISPLAY_HEIGHT - interval*10,  dtostrf(minTemp + graphScale*interval,axisDigits,0,buf));
+        sprintf(buf, "%d", (minTempInt/10) + graphScale*interval);
+        u8g.drawStr(0, DISPLAY_HEIGHT - interval*10,  buf);
       }
       
        // Calculate how many graph points to display.
@@ -229,22 +227,27 @@ void draw(
         int16_t* wrap_point;
 
         // if the sensor is out of range, don't show it
-        if(temperatures[sensor] == OUT_OF_RANGE || (sensor != graphChannel && graphChannel < 4) )
+        if(temperatures[sensor] == OUT_OF_RANGE_INT || (sensor != graphChannel && graphChannel < 4) )
           continue;
-
+/******************* Float Math Start ********************/
         // Get the latest point from the array
         p_float = ((float)(graphPoint(sensor, 0)))/10.0;
-        p = temperatureToGraphPoint(p_float,graphScale,minTemp);
+        p = temperatureToGraphPoint(p_float,graphScale, (((float)(minTempInt))/10.0) );
+/******************* Float Math End ********************/
+
         // Draw a string the the latest point
-        u8g.drawStr(113+5*sensor, 3 + p, dtostrf(sensor+1,1,0,buf));
+        u8g.drawStr(113+5*sensor, 3 + p, printi(buf,sensor+1));
+
 
         // Now, draw all the points
         starting_point = &graph[sensor][graphCurrentPoint];  // Starting address of the graph data
         wrap_point = &graph[sensor][MAXIMUM_GRAPH_POINTS];   // If the address pointer reaches this, reset it to graph[sensor][0]
         for(uint8_t point = 0; point < lastPoint; point++)
         {
+/******************* Float Math Start ********************/
           p_float = ((float)(*(starting_point++)))/10.0;
-          p = temperatureToGraphPoint(p_float,graphScale,minTemp);
+          p = temperatureToGraphPoint(p_float,graphScale, (((float)(minTempInt))/10.0) );
+/******************* Float Math End ********************/
           u8g.drawPixel(MAXIMUM_GRAPH_POINTS+12-point,p);
           if(starting_point == wrap_point) {
             starting_point = &graph[sensor][0];
@@ -258,7 +261,7 @@ void draw(
 
     case 6:
       // Draw status bar
-      //u8g.drawStr(0,  15, dtostrf(ambient,5,1,buf));         // Ambient temperature
+      //u8g.drawStr(0,  15, printi(buf,ambient));         // Ambient temperature
       u8g.drawStr(0,  15, "TypK"); 
       u8g.drawStr(25,  13, "o"); 
       
@@ -274,11 +277,14 @@ void draw(
         break;
       }
       
+      // Write file name
       if(fileName==NULL)
           u8g.drawStr(40, 15,"Not logging");
       else
           u8g.drawStr(40, 15,fileName);
-      u8g.drawStr( 100, 15, dtostrf(logInterval,2,0,buf));    // Interval
+
+      // Interval
+      u8g.drawStr( 100, 15, printi(buf,logInterval));
       u8g.drawStr(110, 15, "s");
 
       // Draw battery
@@ -333,25 +339,28 @@ void draw(
       
       // Display temperature readings  
       #if 1
-      for(uint8_t sensor = 0; sensor < SENSOR_COUNT; sensor++) {
-        if(temperatures[sensor] == OUT_OF_RANGE) {
+
+      for(uint8_t sensor = 0; sensor < SENSOR_COUNT; sensor++)
+      {
+        if(temperatures[sensor] == OUT_OF_RANGE_INT)
+        {
           u8g.drawStr(sensor*34,   6,  " ----");
-        }
-        else {
-          u8g.drawStr(sensor*34,   6,  dtostrf(temperatures[sensor], 5, 1, buf));
+        }else {
+          u8g.drawStr(sensor*34, 6, printtemp(buf,temperatures[sensor]));
         }
       }
+
       #elif 0
       // DEBUG: Write variable values to the spaces rather than the current temp
-      u8g.drawStr(0*34,   6,  dtostrf(temperatures[0], 5, 1, buf));
-      u8g.drawStr(1*34,   6,  dtostrf(temperatures[1], 5, 1, buf));
-      u8g.drawStr(2*34,   6,  dtostrf(temperatures[2], 5, 1, buf));
-      u8g.drawStr(3*34,   6,  dtostrf(temperatures[3], 5, 1, buf));
+      u8g.drawStr(0*34,   6,  printtemp(buf,temperatures[0]));
+      u8g.drawStr(1*34,   6,  printtemp(buf,temperatures[1]));
+      u8g.drawStr(2*34,   6,  printtemp(buf,temperatures[2]));
+      u8g.drawStr(3*34,   6,  printtemp(buf,temperatures[3]));
       #else
       // DEBUG: Write variable values to the spaces rather than the current temp
-      u8g.drawStr(0*34,   6,  dtostrf(maxTemp, 5, 1, buf));
-      u8g.drawStr(1*34,   6,  dtostrf(minTemp, 5, 1, buf));
-      u8g.drawStr(2*34,   6,  dtostrf(graphScale, 5, 1, buf));
+      u8g.drawStr(0*34,   6,  printi(buf,maxTempInt));
+      u8g.drawStr(1*34,   6,  printi(buf,minTempInt));
+      u8g.drawStr(2*34,   6,  printi(buf,graphScale));
       u8g.drawStr(3*34,   6,  " ----");
       #endif
       break;
@@ -370,23 +379,25 @@ void clear() {
   // Clear the screen
   u8g.firstPage();  
   while( u8g.nextPage() );
+
+  return;
 }
 
 } // End namespace Display
 
 
 // TODO: What namespace is this then?
-int32_t GetJunctionVoltage(double* jTemp)
+int32_t GetJunctionVoltage(float jTemp)
 {
   int32_t jVoltage = 0;
   uint8_t i = 0;
 
-  i = *jTemp/10 + 27;
+  i = jTemp/10 + 27;
 
   uint16_t valueLow = lookupThermocouleData(i);
   uint16_t valueHigh = lookupThermocouleData(i + 1);
 
-  jVoltage = valueLow - TK_OFFSET + (*jTemp - (i*10-270)) * (valueHigh - valueLow)/10;
+  jVoltage = valueLow - TK_OFFSET + (jTemp - (i*10-270)) * (valueHigh - valueLow)/10;
 
 //  return i; // Displays '29.0' on the LCD as expected
 //  return tempTypK[29]; // Displays '7256.0'on LCD
@@ -438,6 +449,8 @@ void setup() {
 
   // enable the VBUS pad
   USBCON |= (1<<OTGPADE);
+
+  return;
 }
 
 State get() {
@@ -465,13 +478,13 @@ State get() {
         && battStatCounts < BATT_DISCONNECTED_COUNTS_MAX) {
     return NO_BATTERY;
   }
-  else {
-    // default to this
-    return CHARGED;
-  }
+
+  // default to this
+  return CHARGED;
 }
 
 uint8_t getBatteryLevel() {
+
   // VBAT_SENSE_V= 34 × VBAT/(34 + 18.7)
   // VBAT_SENSE_COUNTS = VBAT_SENSE_V / 3.3 * 1024
   
@@ -483,6 +496,7 @@ uint8_t getBatteryLevel() {
   uint8_t batteryLevel = ((vbatSenseCounts - VBAT_SENSE_EMPTY)*5)/(VBAT_SENSE_FULL - VBAT_SENSE_EMPTY);
   
   return batteryLevel<5?batteryLevel:4;
+
 }
 
 }

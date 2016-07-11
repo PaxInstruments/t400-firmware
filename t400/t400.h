@@ -1,9 +1,12 @@
+#ifndef __T400_H__
+#define __T400_H__
+
 // Hardware definitions for the t400
 #define __AVR_ATmega32U4__      1
 
 // Feature settings
-#define SD_LOGGING_ENABLED      1  // Enable/disable all SD card functionality. Saves 8,696 bytes
-#define SERIAL_OUTPUT_ENABLED   1  // Enable/disable serial output functionality. Saves 192 bytes
+#define SD_LOGGING_ENABLED      1  // Enable/disable all SD card functionality. Saves 8,606 bytes
+#define SERIAL_OUTPUT_ENABLED   1  // Enable/disable serial output functionality. Saves 174 bytes
 
 // Calibration values
 #define MCP3424_CALIBRATION_MULTIPLY    1.00713
@@ -64,3 +67,6 @@
 #define LCD_RST             A3
 #define LCD_CS              A4
 #define LCD_BACKLIGHT_PIN   A5   // LCD backlight on pin
+
+
+#endif

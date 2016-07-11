@@ -7,6 +7,8 @@ namespace Buttons {
 uint8_t stuckButtonMask;
 uint8_t pendingButtons;
 
+uint8_t buttonDebounce = 0;
+
 const uint8_t buttonPins[BUTTON_COUNT] = {
   BUTTON_A_PIN,
   BUTTON_B_PIN,
@@ -48,9 +50,8 @@ void setup() {
   // SW_PWR      Power on/off            PCINT7  PB7
   PCMSK0 |= 0xF0;
   PCICR |= _BV(PCIE0);
+  return;
 }
-
-uint8_t buttonDebounce = 0;
 
 // Scan for new button presses
 void buttonTask() {
@@ -68,6 +69,7 @@ void buttonTask() {
       }
     }
   }
+  return;
 }
 
 
@@ -113,6 +115,7 @@ ISR(INT6_vect) {
   }
   
   Buttons::buttonTask();
+  return;
 }
 
 ISR(INT3_vect) { Buttons::buttonTask();}
