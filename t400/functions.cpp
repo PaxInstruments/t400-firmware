@@ -229,6 +229,7 @@ void draw(
         // if the sensor is out of range, don't show it
         if(temperatures[sensor] == OUT_OF_RANGE_INT || (sensor != graphChannel && graphChannel < 4) )
           continue;
+
 /******************* Float Math Start ********************/
         // Get the latest point from the array
         p_float = ((float)(graphPoint(sensor, 0)))/10.0;
@@ -237,7 +238,6 @@ void draw(
 
         // Draw a string the the latest point
         u8g.drawStr(113+5*sensor, 3 + p, printi(buf,sensor+1));
-
 
         // Now, draw all the points
         starting_point = &graph[sensor][graphCurrentPoint];  // Starting address of the graph data
@@ -385,47 +385,67 @@ void clear() {
 
 } // End namespace Display
 
-
 // TODO: What namespace is this then?
-int32_t GetJunctionVoltage(float jTemp)
+
+/******************* Float Math Start ********************/
+// This is a lookup from temperature to microvolts
+int32_t celcius_to_microvolts(float celcius)
 {
-  int32_t jVoltage = 0;
+  int32_t voltage = 0;
   uint8_t i = 0;
+  uint16_t tempLow;
+  uint16_t tempHigh;
 
-  i = jTemp/10 + 27;
+  // We do this because...?
+  i = celcius/10 + 27;
 
-  uint16_t valueLow = lookupThermocouleData(i);
-  uint16_t valueHigh = lookupThermocouleData(i + 1);
+  // This gets us a 10C range this value could be in
+  tempLow = lookupThermocouleData(i);
+  tempHigh = lookupThermocouleData(i + 1);
 
-  jVoltage = valueLow - TK_OFFSET + (jTemp - (i*10-270)) * (valueHigh - valueLow)/10;
+  // This interpolates the voltage between the 2 points??
+  // ??? (low - offset) + ((temp - VAR) * (delta/10))
+  voltage = tempLow - TK_OFFSET + (celcius - (i*10-270)) * (tempHigh - tempLow)/10;
 
-//  return i; // Displays '29.0' on the LCD as expected
-//  return tempTypK[29]; // Displays '7256.0'on LCD
-  return jVoltage;
+  //return i; // Displays '29.0' on the LCD as expected
+  //return tempTypK[29]; // Displays '7256.0'on LCD
+  return voltage;
 }
 
-float GetTypKTemp(int32_t microVolts)
+// This is a lookup for temperature given microvolts
+float microvolts_to_celcius(int32_t microVolts)
 {
   float LookedupValue;
+  uint16_t tempLow;
+  uint16_t tempHigh;
 
   // Input the junction temperature compensated voltage such that the junction
   // temperature is compensated to 0°C
-  microVolts += TK_OFFSET; //Add an offset for the adjusted lookup table.
+
+  //Add an offset for the adjusted lookup table.
+  microVolts += TK_OFFSET;
+
   // Check if it's in range
   if(microVolts > TEMP_TYPE_K_MAX_CONVERSION || microVolts < TEMP_TYPE_K_MIN_CONVERSION)
   {
     return OUT_OF_RANGE;
   }
   
+  // Now itterate through the temperature lookup table to find
+  // a temperature range for our microvolts.
+
   // TODO: Binary search here to decrease lookup time
   for(uint16_t i = 0; i<TEMP_TYPE_K_LENGTH; i++)
   {
-    uint16_t valueLow = lookupThermocouleData(i);
-    uint16_t valueHigh = lookupThermocouleData(i + 1);
+    tempLow = lookupThermocouleData(i);
+    tempHigh = lookupThermocouleData(i + 1);
     
-    if(microVolts >= valueLow && microVolts <= valueHigh)
+    // NOTE: I think there is a bug here, the lookupThermocouleData macro
+    // returns a temperature, but we are comparing that to micovolts
+    if(microVolts >= tempLow && microVolts <= tempHigh)
     {
-      LookedupValue = ((float)-270 + (i)*10) + ((10 *(float)(microVolts - valueLow)) / ((float)(valueHigh - valueLow)));
+      // Why do we do this math?
+      LookedupValue = ((float)-270 + (i)*10) + ((10 *(float)(microVolts - tempLow)) / ((float)(tempHigh - tempLow)));
       break;
     }
 
@@ -433,7 +453,7 @@ float GetTypKTemp(int32_t microVolts)
 
   return LookedupValue;
 }
-
+/******************* Float Math End ********************/
 
 namespace ChargeStatus {
   

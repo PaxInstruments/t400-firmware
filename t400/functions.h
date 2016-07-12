@@ -68,12 +68,12 @@ namespace Display {
 // Converts the junction temperature into a voltage for offset
 // @param temperature reading from junction temperature sensor
 // return voltage in uVolts
-int32_t GetJunctionVoltage(float jTemp);
+int32_t celcius_to_microvolts(float jTemp);
 
 // Converts the thermocouple µV reading into some usable °C
 // @param microVolt reading from the ADC
 // @return Temperature, in ???
-float GetTypKTemp(int32_t microVolts);
+float microvolts_to_celcius(int32_t microVolts);
 
 
 #endif

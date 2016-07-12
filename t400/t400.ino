@@ -91,14 +91,14 @@ void rotateTemperatureUnit() {
 
 // Convert temperature from celcius to the new unit
 double convertTemperature(double Celcius) {
-  if(temperatureUnit == TEMPERATURE_UNITS_C) {
-    return Celcius;
-  }
-  else if(temperatureUnit == TEMPERATURE_UNITS_K) {
+  switch(temperatureUnit){
+  case TEMPERATURE_UNITS_F:
+    return 9.0/5.0*Celcius+32;
+  case TEMPERATURE_UNITS_K:
     return Celcius + 273.15;
+  default: break;
   }
-  // TEMPERATURE_UNITS_F
-  return 9.0/5.0*Celcius+32;
+  return Celcius;
 }
 
 // This function runs once. Use it for setting up the program state.
@@ -157,46 +157,73 @@ void stopLogging() {
 static void readTemperatures() {
   int32_t measuredVoltageUv;
   int32_t compensatedVoltage;
+  int32_t tmpint32;
+  int16_t tmpint16=0;
+  float tmpflt;
 
-  float tempflt;
-  int16_t tempint=0;
-
-/******************* Float Math Start ********************/
-  tempflt = ambientSensor.readTempC16(AMBIENT) / 16.0;  // Read ambient temperature in C
-  ambient = ((int16_t)(tempflt*10));
-/******************* Float Math End ********************/
+  // This gets the temperature as an integer which is °C times 16.
+  tmpint32 = ambientSensor.readTempC16(AMBIENT);
+  tmpint32 = tmpint32 >> 4; // This divides the temperature by 16
+  ambient = tmpint32 * 10; // Get into 1/10ths
 
   // ADC read loop: Start a measurement, wait until it is finished, then record it
   for(uint8_t channel = 0; channel < SENSOR_COUNT; channel++)
   {
 
-    // TODO: There has to be a better way
+    // TODO: There has to be a better way.  What about kicking the measurement off
+    // and then continuing to do the mainloop.  Then once there is a measurement
+    // that is ready we process it. This will allow us to do the display updating
+    // while the ADC is busy, increasing throughput.  This could even get us
+    // sub-second processing.  In theory we can do 1/4 sec processing
+
+    // NOTE: This is a big block, 0.066 sec/measurement * 4 channels = 0.264 sec
+
     thermocoupleAdc.startMeasurement(temperatureChannels[channel]);
+    #if 0
     do {
       // Delay a while. At 16-bit resolution, the ADC can do a speed of 1/15 = .066seconds/cycle
       // Let's wait a little longer than that in case there is set up time for changing channels.
       delay(70);
     } while(!thermocoupleAdc.measurementReady());
+    #else
+    // NOTE: Why delay?  This is just a busy loop, so it should exit as soon as there
+    // is valid data.  If we delay we could miss it by a few ms, which isn't efficient
+    while(!thermocoupleAdc.measurementReady());
+    #endif
 
-/******************* Float Math Start ********************/
-    // This gets a float value.  We do a y = mx+b for calibration
-    measuredVoltageUv = thermocoupleAdc.getMeasurementUv() * MCP3424_CALIBRATION_MULTIPLY + MCP3424_CALIBRATION_ADD; // Calibration value: MCP3424_OFFSET_CALIBRATION
-    compensatedVoltage = measuredVoltageUv + GetJunctionVoltage( (((float)(ambient))/10.0) );
-    tempflt = GetTypKTemp(compensatedVoltage);
-    if(tempflt != OUT_OF_RANGE)
+    // getMeasurementUv returns an int32_t which is the value in micro volts for this channel
+    tmpint32 = thermocoupleAdc.getMeasurementUv();
+
+    /******************* Float Math Start ********************/
+
+    // Now we need to calibrate things.  This is y=mx+b
+    // Calibration value: MCP3424_OFFSET_CALIBRATION
+    tmpflt =  (((float)tmpint32)* MCP3424_CALIBRATION_MULTIPLY) + MCP3424_CALIBRATION_ADD;
+    measuredVoltageUv = (uint32_t)tmpflt;
+
+    // Get the measured voltage, removing the ambient junction temperature
+    compensatedVoltage = measuredVoltageUv + celcius_to_microvolts( (((float)(ambient))/10.0) );
+
+    // Given a voltage, get the temperature
+    tmpflt = microvolts_to_celcius(compensatedVoltage);
+
+    // Now convert to C, F, K
+    if(tmpflt != OUT_OF_RANGE)
     {
       //temperature = convertTemperature(temperature + ambient_float);
-      tempflt = convertTemperature(tempflt);
+      tmpflt = convertTemperature(tmpflt);
     }
-    tempint = ((int16_t)(tempflt*10));
-    temperatures_int[channel] = tempint;
 
-/******************* Float Math End ********************/
+    // Convert from float to int and save
+    tmpint16 = ((int16_t)(tmpflt*10));
+    temperatures_int[channel] = tmpint16;
+
+    /******************* Float Math End ********************/
 
     // DEBUG: Fake some data
     #if 1
-    temperatures_int[0] = 123;
-    temperatures_int[1] = 345;
+    temperatures_int[0] = 123; //12.3C
+    temperatures_int[1] = 345; // 34.5C
     temperatures_int[2] = OUT_OF_RANGE_INT;
     temperatures_int[3] = OUT_OF_RANGE_INT;
     #endif
