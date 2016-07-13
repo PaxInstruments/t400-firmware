@@ -169,7 +169,6 @@ void setup()
   return;
 }
 
-
 void draw(
   int16_t* temperatures,
   uint8_t graphChannel,
@@ -260,6 +259,7 @@ void draw(
       break;
 
     case 6:
+
       // Draw status bar
       //u8g.drawStr(0,  15, printi(buf,ambient));         // Ambient temperature
       u8g.drawStr(0,  15, "TypK"); 
@@ -327,6 +327,7 @@ void draw(
         u8g.drawLine(battX+3, battY+1, battX+3, battY+5);
         break;
       }
+
       break;
 
     case 7:
@@ -339,7 +340,6 @@ void draw(
       
       // Display temperature readings  
       #if 1
-
       for(uint8_t sensor = 0; sensor < SENSOR_COUNT; sensor++)
       {
         if(temperatures[sensor] == OUT_OF_RANGE_INT)
@@ -358,11 +358,12 @@ void draw(
       u8g.drawStr(3*34,   6,  printtemp(buf,temperatures[3]));
       #else
       // DEBUG: Write variable values to the spaces rather than the current temp
-      u8g.drawStr(0*34,   6,  printi(buf,maxTempInt));
-      u8g.drawStr(1*34,   6,  printi(buf,minTempInt));
-      u8g.drawStr(2*34,   6,  printi(buf,graphScale));
-      u8g.drawStr(3*34,   6,  " ----");
+      u8g.drawStr(0*34,   6,  printi(buf,loopcount));
+      //u8g.drawStr(1*34,   6,  printi(buf,minTempInt));
+      //u8g.drawStr(2*34,   6,  printi(buf,graphScale));
+      //u8g.drawStr(3*34,   6,  " ----");
       #endif
+
       break;
 
     } // End of select(page)
@@ -384,6 +385,7 @@ void clear() {
 }
 
 } // End namespace Display
+
 
 // TODO: What namespace is this then?
 

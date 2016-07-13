@@ -51,7 +51,7 @@ namespace Display {
   void updateGraphScaling();
   
   void setup();
-  
+
   void draw(
     int16_t* temperatures,
     uint8_t graphChannel,

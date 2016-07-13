@@ -221,7 +221,7 @@ static void readTemperatures() {
     /******************* Float Math End ********************/
 
     // DEBUG: Fake some data
-    #if 1
+    #if 0
     temperatures_int[0] = 123; //12.3C
     temperatures_int[1] = 345; // 34.5C
     temperatures_int[2] = OUT_OF_RANGE_INT;
