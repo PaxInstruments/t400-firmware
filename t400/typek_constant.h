@@ -2,6 +2,7 @@
 #define TYPEK_CONSTANT_H
 
 // Macro for accessing thermocouple data
+// Usage: temperatureC = lookupThermocouleData(microvolts)
 #define lookupThermocouleData(index) (pgm_read_dword(tempTypK + index))
 
 // Note: if switching to eeprom, could look like this instead:
@@ -18,6 +19,7 @@
 #define TEMP_TYPE_K_MAX_CONVERSION 61277
 #define TK_OFFSET 6458
 
+// Usage: temperatureC = tempTypK[microvolts]
 const uint16_t tempTypK[TEMP_TYPE_K_LENGTH] PROGMEM = 
 { 
 // Adjusted lookup voltage, normal lookup voltage, corresponding temperature

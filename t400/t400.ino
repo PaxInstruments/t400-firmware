@@ -49,11 +49,11 @@ MCP980X ambientSensor(0);      // Ambient temperature sensor
 // Map of ADC inputs to thermocouple channels
 const uint8_t temperatureChannels[SENSOR_COUNT] = {1, 0, 3, 2};
 
-// Current temperature of each thermocouple input
-float temperatures[SENSOR_COUNT] = {OUT_OF_RANGE,OUT_OF_RANGE,OUT_OF_RANGE,OUT_OF_RANGE};
+int16_t temperatures_int[SENSOR_COUNT] = {OUT_OF_RANGE_INT,OUT_OF_RANGE_INT,
+                                          OUT_OF_RANGE_INT,OUT_OF_RANGE_INT};
 
 // Ambient temperature
-double ambient =  0;
+int16_t ambient =  0;
 
 boolean backlightEnabled = true;
 
@@ -86,19 +86,19 @@ void rotateTemperatureUnit() {
   Display::resetGraph();
 
   // TODO: Convert the current data to new units?
+  return;
 }
 
 // Convert temperature from celcius to the new unit
 double convertTemperature(double Celcius) {
-  if(temperatureUnit == TEMPERATURE_UNITS_C) {
-    return Celcius;
-  }
-  else if(temperatureUnit == TEMPERATURE_UNITS_K) {
-    return Celcius + 273.15;
-  }
-  else { // TEMPERATURE_UNITS_F
+  switch(temperatureUnit){
+  case TEMPERATURE_UNITS_F:
     return 9.0/5.0*Celcius+32;
+  case TEMPERATURE_UNITS_K:
+    return Celcius + 273.15;
+  default: break;
   }
+  return Celcius;
 }
 
 // This function runs once. Use it for setting up the program state.
@@ -119,10 +119,6 @@ void setup(void) {
   Display::setup();
   Display::resetGraph();
 
-  // Clear the temperature array
-  //for(x=0;x<SENSOR_COUNT;x++)
-  //    temperatures[x] = OUT_OF_RANGE;
-
   thermocoupleAdc.begin();
 
   ambientSensor.begin();
@@ -137,97 +133,123 @@ void setup(void) {
   EIMSK |= _BV(INT2);    // and enable the INT2 interrupt
 
   Buttons::setup();
+
+  return;
 }
 
 void startLogging() {
-  if(logging) {
-    return;
-  }
+
+  if(logging) return;
 
   sd::init();
   logging = sd::open(fileName);
+  return;
 }
 
 void stopLogging() {
-  if(!logging) {
-    return;
-  }
+  if(!logging) return;
 
   logging = false;
   sd::close();
+  return;
 }
 
 static void readTemperatures() {
   int32_t measuredVoltageUv;
   int32_t compensatedVoltage;
+  int32_t tmpint32;
+  int16_t tmpint16=0;
+  float tmpflt;
 
-  double temperature;
-
-  ambient = ambientSensor.readTempC16(AMBIENT) / 16.0;  // Read ambient temperature in C
+  // This gets the temperature as an integer which is °C times 16.
+  tmpint32 = ambientSensor.readTempC16(AMBIENT);
+  tmpint32 = tmpint32 >> 4; // This divides the temperature by 16
+  ambient = tmpint32 * 10; // Get into 1/10ths
 
   // ADC read loop: Start a measurement, wait until it is finished, then record it
   for(uint8_t channel = 0; channel < SENSOR_COUNT; channel++)
   {
 
+    // TODO: There has to be a better way.  What about kicking the measurement off
+    // and then continuing to do the mainloop.  Then once there is a measurement
+    // that is ready we process it. This will allow us to do the display updating
+    // while the ADC is busy, increasing throughput.  This could even get us
+    // sub-second processing.  In theory we can do 1/4 sec processing
+
+    // NOTE: This is a big block, 0.066 sec/measurement * 4 channels = 0.264 sec
+
     thermocoupleAdc.startMeasurement(temperatureChannels[channel]);
+    #if 0
     do {
       // Delay a while. At 16-bit resolution, the ADC can do a speed of 1/15 = .066seconds/cycle
       // Let's wait a little longer than that in case there is set up time for changing channels.
       delay(70);
     } while(!thermocoupleAdc.measurementReady());
-
-
-    // This gets a float value.  We do a y = mx+b for calibration
-    measuredVoltageUv = thermocoupleAdc.getMeasurementUv() * MCP3424_CALIBRATION_MULTIPLY + MCP3424_CALIBRATION_ADD; // Calibration value: MCP3424_OFFSET_CALIBRATION
-    compensatedVoltage = measuredVoltageUv + GetJunctionVoltage(&ambient);
-    temperature = GetTypKTemp(compensatedVoltage);
-    #if 0
-    // TODO: Get the real value in a float, then convert it to a fixed point int, that
-    // way we can get rid of floating point math
-    temperature_int = float_to_int(temperature);
+    #else
+    // NOTE: Why delay?  This is just a busy loop, so it should exit as soon as there
+    // is valid data.  If we delay we could miss it by a few ms, which isn't efficient
+    while(!thermocoupleAdc.measurementReady());
     #endif
 
-    if(temperature == OUT_OF_RANGE) {
-      temperatures[channel] = OUT_OF_RANGE;
+    // getMeasurementUv returns an int32_t which is the value in micro volts for this channel
+    tmpint32 = thermocoupleAdc.getMeasurementUv();
+
+    /******************* Float Math Start ********************/
+
+    // Now we need to calibrate things.  This is y=mx+b
+    // Calibration value: MCP3424_OFFSET_CALIBRATION
+    tmpflt =  (((float)tmpint32)* MCP3424_CALIBRATION_MULTIPLY) + MCP3424_CALIBRATION_ADD;
+    measuredVoltageUv = (uint32_t)tmpflt;
+
+    // Get the measured voltage, removing the ambient junction temperature
+    compensatedVoltage = measuredVoltageUv + celcius_to_microvolts( (((float)(ambient))/10.0) );
+
+    // Given a voltage, get the temperature
+    tmpflt = microvolts_to_celcius(compensatedVoltage);
+
+    // Now convert to C, F, K
+    if(tmpflt != OUT_OF_RANGE)
+    {
+      //temperature = convertTemperature(temperature + ambient_float);
+      tmpflt = convertTemperature(tmpflt);
     }
-    else {
-      //temperatures[channel] = convertTemperature(temperature + ambient);
-      temperatures[channel] = convertTemperature(temperature);
-    }
+
+    // Convert from float to int and save
+    tmpint16 = ((int16_t)(tmpflt*10));
+    temperatures_int[channel] = tmpint16;
+
+    /******************* Float Math End ********************/
 
     // DEBUG: Fake some data
     #if 0
-    temperatures[0] = 22.0;
-    temperatures[1] = OUT_OF_RANGE;
-    temperatures[2] = OUT_OF_RANGE;
-    temperatures[3] = OUT_OF_RANGE;
+    temperatures_int[0] = 123; //12.3C
+    temperatures_int[1] = 345; // 34.5C
+    temperatures_int[2] = OUT_OF_RANGE_INT;
+    temperatures_int[3] = OUT_OF_RANGE_INT;
     #endif
 
+  } // end for loop
 
-    // This is some debugging code. Use it to display various values to the LCD.
-    #if DEBUG_JUNCTION_TEMPERATURE
-    if(channel == 2 ){// != OUT_OF_RANGE){
-      temperatures[channel] = (double)measuredVoltageUv; // Display measured voltage across thermocouple. Everything looks good here.
-    }
-    #endif
-
-  }
+  return;
 }
 
 static void writeOutputs() {
+
   static char updateBuffer[BUFF_MAX];      // Scratch buffer to write serial/sd output into
+  uint8_t index=0;
 
-  dtostrf(logTimeSeconds, 8,0, updateBuffer + 0);
+  index += sprintf(&(updateBuffer[index]),"%d",logTimeSeconds);
 
-  for(uint8_t i = 0; i < SENSOR_COUNT; i++) {
-    if(temperatures[i] == OUT_OF_RANGE) {
-      strcpy(updateBuffer+strlen(updateBuffer), ", -");
-    }
-    else {
-      strcpy(updateBuffer+strlen(updateBuffer), ", ");
-      dtostrf(temperatures[i], 0, 2, updateBuffer+strlen(updateBuffer));
+  for(uint8_t i = 0; i < SENSOR_COUNT; i++)
+  {
+    if(temperatures_int[i] == OUT_OF_RANGE_INT)
+    {
+        index += sprintf(&(updateBuffer[index]), ", -");
+    }else {
+      index+=sprintf(&(updateBuffer[index]), ", %d.%d",temperatures_int[i]/10,temperatures_int[i]%10);
     }
   }
+
   #if SERIAL_OUTPUT_ENABLED
   Serial.println(updateBuffer);
   #endif
@@ -235,6 +257,7 @@ static void writeOutputs() {
   if(logging) {
     logging = sd::log(updateBuffer);
   }
+  return;
 }
 
 // Reset the tick counter, so that a new measurement takes place within 1 second
@@ -243,6 +266,7 @@ void resetTicks() {
   isrTick = logIntervals[logInterval]-1; // TODO: This is a magic number
   logTimeSeconds = 0;
   interrupts();
+  return;
 }
 
 // This function is called periodically, and performs slow tasks:
@@ -259,7 +283,7 @@ void loop() {
     //DS3231_get(&rtcTime);
 
     writeOutputs();
-    Display::updateGraphData(temperatures);
+    Display::updateGraphData(temperatures_int);
     Display::updateGraphScaling();
 
     needsRefresh = true;
@@ -278,9 +302,11 @@ void loop() {
         Power::shutdown();
       }
       break;
+
     case BUTTON_A:
       // Start/stop logging
       #if SD_LOGGING_ENABLED
+      // NOTE: Logging takes up 30% of the flash!!!
       if(!logging) {
         startLogging();
       }
@@ -288,9 +314,10 @@ void loop() {
         stopLogging();
       }
       resetTicks();
-        needsRefresh = true;
+      needsRefresh = true;
       #endif
-        break;
+      break;
+
     case BUTTON_B:
       // Cycle log interval
       if(!logging) {
@@ -313,7 +340,7 @@ void loop() {
     case BUTTON_D:
       // Sensor display mode
       graphChannel = (graphChannel + 1) % GRAPH_CHANNELS_COUNT;
-      while(graphChannel < 4 & temperatures[graphChannel] == OUT_OF_RANGE) {
+      while(graphChannel < 4 & temperatures_int[graphChannel] == OUT_OF_RANGE_INT) {
         graphChannel = (graphChannel + 1) % GRAPH_CHANNELS_COUNT;
       }
       needsRefresh = true;
@@ -344,7 +371,7 @@ void loop() {
     if(logging) ptr = fileName;
 
     Display::draw(
-      temperatures,
+      temperatures_int,
       graphChannel,
       temperatureUnit,
       ptr,
@@ -374,4 +401,5 @@ ISR(INT2_vect)
   if(isrTick == 0) {
     timeToSample = true;
   }
+  return;
 }

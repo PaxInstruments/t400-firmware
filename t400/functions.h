@@ -47,15 +47,14 @@ namespace Backlight {
 namespace Display {
 
   void resetGraph();
-  void updateGraphData(float* temperatures);
+  void updateGraphData(int16_t* temperatures);
   void updateGraphScaling();
   
   void setup();
-  
+
   void draw(
-    float* temperatures,
-  //  double ambient,
-  uint8_t graphChannel,
+    int16_t* temperatures,
+    uint8_t graphChannel,
     uint8_t temperatureUnit,
     char* fileName,
     uint8_t logInterval,
@@ -69,12 +68,12 @@ namespace Display {
 // Converts the junction temperature into a voltage for offset
 // @param temperature reading from junction temperature sensor
 // return voltage in uVolts
-int32_t GetJunctionVoltage(double* jTemp);
+int32_t celcius_to_microvolts(float jTemp);
 
 // Converts the thermocouple µV reading into some usable °C
 // @param microVolt reading from the ADC
 // @return Temperature, in ???
-float GetTypKTemp(int32_t microVolts);
+float microvolts_to_celcius(int32_t microVolts);
 
 
 #endif
