@@ -47,12 +47,13 @@ namespace Backlight {
 namespace Display {
 
   void resetGraph();
-  void updateGraph(double* temperatures);
+  void updateGraphData(float* temperatures);
+  void updateGraphScaling();
   
   void setup();
   
   void draw(
-    double* temperatures,
+    float* temperatures,
   //  double ambient,
   uint8_t graphChannel,
     uint8_t temperatureUnit,
@@ -73,7 +74,7 @@ int32_t GetJunctionVoltage(double* jTemp);
 // Converts the thermocouple µV reading into some usable °C
 // @param microVolt reading from the ADC
 // @return Temperature, in ???
-double GetTypKTemp(int32_t microVolts);
+float GetTypKTemp(int32_t microVolts);
 
 
 #endif

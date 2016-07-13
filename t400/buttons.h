@@ -3,9 +3,8 @@
 
 #include <Arduino.h>
 
-namespace Buttons {
-  // Button names
-  enum Button {
+// Button names
+enum Button {
     BUTTON_A,
     BUTTON_B,
     BUTTON_C,
@@ -13,7 +12,9 @@ namespace Buttons {
     BUTTON_E,
     BUTTON_POWER,
     BUTTON_COUNT
-  };
+};
+
+namespace Buttons {
 
   void setup();
   bool pending();

@@ -24,49 +24,56 @@ Firmware for the Pax Instruments T400 temperature datalogger
 // Import libraries
 #include "t400.h"             // Board definitions
 
-#include <Wire.h>       // i2c
+#include <Wire.h>             // I2C
 #include <SPI.h>
 
-#include "PaxInstruments-U8glib.h"     // LCD
-#include <MCP3424.h>    // ADC
-#include <MCP980X.h>    // Ambient/junction temperature sensor
-#include <ds3231.h>     // RTC
-
+#include "PaxInstruments-U8glib.h"  // LCD
+#include <MCP3424.h>          // ADC
+#include <MCP980X.h>          // Ambient/junction temperature sensor
+#include <ds3231.h>           // RTC
 #include "power.h"            // Manage board power
 #include "buttons.h"          // User buttons
 #include "typek_constant.h"   // Thermocouple calibration table
 #include "functions.h"        // Misc. functions
 #include "sd_log.h"           // SD card utilities
+
 #define BUFF_MAX         80   // Size of the character buffer
 
 char fileName[] =        "LD0001.CSV";
 
 // MCP3424 for thermocouple measurements
-MCP3424      thermocoupleAdc(MCP3424_ADDR, MCP342X_GAIN_X8, MCP342X_16_BIT);  // address, gain, resolution
+MCP3424 thermocoupleAdc(MCP3424_ADDR, MCP342X_GAIN_X8, MCP342X_16_BIT);  // address, gain, resolution
 
 MCP980X ambientSensor(0);      // Ambient temperature sensor
 
+// Map of ADC inputs to thermocouple channels
+const uint8_t temperatureChannels[SENSOR_COUNT] = {1, 0, 3, 2};
 
-const uint8_t temperatureChannels[SENSOR_COUNT] = {1, 0, 3, 2};  // Map of ADC inputs to thermocouple channels
-double temperatures[SENSOR_COUNT];  // Current temperature of each thermocouple input
-double ambient =  0;        // Ambient temperature
+// Current temperature of each thermocouple input
+float temperatures[SENSOR_COUNT] = {OUT_OF_RANGE,OUT_OF_RANGE,OUT_OF_RANGE,OUT_OF_RANGE};
+
+// Ambient temperature
+double ambient =  0;
 
 boolean backlightEnabled = true;
 
+// Available log intervals, in seconds
 #define LOG_INTERVAL_COUNT 6
-const uint8_t logIntervals[LOG_INTERVAL_COUNT] = {1, 2, 5, 10, 30, 60};  // Available log intervals, in seconds
-uint8_t logInterval    = 0;       // currently selected log interval
-boolean logging = false;          // True if we are currently logging to a file
+const uint8_t logIntervals[LOG_INTERVAL_COUNT] = {1, 2, 5, 10, 30, 60};
 
 
-bool timeToSample = false;      // If true, the display should be redrawn
-uint8_t isrTick = 0;  // Number of 1-second tics that have elapsed since the last sample
-uint8_t lastIsrTick = 0;  // Last tick that we redrew the screen
-uint32_t logTimeSeconds;  // Number of seconds that have elapsed since logging began
+uint8_t logInterval    = 0; // currently selected log interval
+boolean logging = false;    // True if we are currently logging to a file
 
-struct ts rtcTime;                // Buffer to read RTC time into
 
-uint8_t temperatureUnit;          // Measurement unit for temperature
+bool timeToSample = false;  // If true, the display should be redrawn
+uint8_t isrTick = 0;        // Number of 1-second tics that have elapsed since the last sample
+uint8_t lastIsrTick = 0;    // Last tick that we redrew the screen
+uint32_t logTimeSeconds;    // Number of seconds that have elapsed since logging began
+
+struct ts rtcTime;          // Buffer to read RTC time into
+
+uint8_t temperatureUnit;    // Measurement unit for temperature
 
 uint8_t graphChannel = 4;
 
@@ -96,6 +103,8 @@ double convertTemperature(double Celcius) {
 
 // This function runs once. Use it for setting up the program state.
 void setup(void) {
+  uint8_t x;
+
   Power::setup();
   ChargeStatus::setup();
   #if SERIAL_OUTPUT_ENABLED
@@ -109,6 +118,10 @@ void setup(void) {
 
   Display::setup();
   Display::resetGraph();
+
+  // Clear the temperature array
+  //for(x=0;x<SENSOR_COUNT;x++)
+  //    temperatures[x] = OUT_OF_RANGE;
 
   thermocoupleAdc.begin();
 
@@ -153,7 +166,9 @@ static void readTemperatures() {
   ambient = ambientSensor.readTempC16(AMBIENT) / 16.0;  // Read ambient temperature in C
 
   // ADC read loop: Start a measurement, wait until it is finished, then record it
-  for(uint8_t channel = 0; channel < SENSOR_COUNT; channel++) {
+  for(uint8_t channel = 0; channel < SENSOR_COUNT; channel++)
+  {
+
     thermocoupleAdc.startMeasurement(temperatureChannels[channel]);
     do {
       // Delay a while. At 16-bit resolution, the ADC can do a speed of 1/15 = .066seconds/cycle
@@ -161,24 +176,41 @@ static void readTemperatures() {
       delay(70);
     } while(!thermocoupleAdc.measurementReady());
 
+
+    // This gets a float value.  We do a y = mx+b for calibration
     measuredVoltageUv = thermocoupleAdc.getMeasurementUv() * MCP3424_CALIBRATION_MULTIPLY + MCP3424_CALIBRATION_ADD; // Calibration value: MCP3424_OFFSET_CALIBRATION
     compensatedVoltage = measuredVoltageUv + GetJunctionVoltage(&ambient);
     temperature = GetTypKTemp(compensatedVoltage);
+    #if 0
+    // TODO: Get the real value in a float, then convert it to a fixed point int, that
+    // way we can get rid of floating point math
+    temperature_int = float_to_int(temperature);
+    #endif
 
     if(temperature == OUT_OF_RANGE) {
       temperatures[channel] = OUT_OF_RANGE;
     }
     else {
- //     temperatures[channel] = convertTemperature(temperature + ambient);
+      //temperatures[channel] = convertTemperature(temperature + ambient);
       temperatures[channel] = convertTemperature(temperature);
     }
 
-// This is some debugging code. Use it to display various values to the LCD.
-#if DEBUG_JUNCTION_TEMPERATURE
+    // DEBUG: Fake some data
+    #if 0
+    temperatures[0] = 22.0;
+    temperatures[1] = OUT_OF_RANGE;
+    temperatures[2] = OUT_OF_RANGE;
+    temperatures[3] = OUT_OF_RANGE;
+    #endif
+
+
+    // This is some debugging code. Use it to display various values to the LCD.
+    #if DEBUG_JUNCTION_TEMPERATURE
     if(channel == 2 ){// != OUT_OF_RANGE){
       temperatures[channel] = (double)measuredVoltageUv; // Display measured voltage across thermocouple. Everything looks good here.
     }
-#endif
+    #endif
+
   }
 }
 
@@ -224,25 +256,30 @@ void loop() {
 
     readTemperatures();
 
-//    DS3231_get(&rtcTime);
+    //DS3231_get(&rtcTime);
 
     writeOutputs();
-    Display::updateGraph(temperatures);
+    Display::updateGraphData(temperatures);
+    Display::updateGraphScaling();
 
     needsRefresh = true;
   }
 
+  // Check for button presses
   if(Buttons::pending()) {
     uint8_t button = Buttons::getPending();
 
-    if(button == Buttons::BUTTON_POWER) { // Disable power
+    switch(button){
+    case BUTTON_POWER:
+      // Disable power
       if(!logging) {
         Display::clear();
         Backlight::set(0);
         Power::shutdown();
       }
-    }
-    else if(button == Buttons::BUTTON_A) { // Start/stop logging
+      break;
+    case BUTTON_A:
+      // Start/stop logging
       #if SD_LOGGING_ENABLED
       if(!logging) {
         startLogging();
@@ -253,8 +290,9 @@ void loop() {
       resetTicks();
         needsRefresh = true;
       #endif
-    }
-    else if(button == Buttons::BUTTON_B) { // Cycle log interval
+        break;
+    case BUTTON_B:
+      // Cycle log interval
       if(!logging) {
         logInterval = (logInterval + 1) % LOG_INTERVAL_COUNT;
         resetTicks();
@@ -263,26 +301,33 @@ void loop() {
         resetTicks();
         needsRefresh = true;
       }
-    }
-    else if(button == Buttons::BUTTON_C) { // Cycle temperature units
+      break;
+    case BUTTON_C:
+      // Cycle temperature units
       if(!logging) {
         rotateTemperatureUnit();
         resetTicks();
         needsRefresh = true;
       }
-    }
-    else if(button == Buttons::BUTTON_D) { // Sensor display mode
+      break;
+    case BUTTON_D:
+      // Sensor display mode
       graphChannel = (graphChannel + 1) % GRAPH_CHANNELS_COUNT;
       while(graphChannel < 4 & temperatures[graphChannel] == OUT_OF_RANGE) {
         graphChannel = (graphChannel + 1) % GRAPH_CHANNELS_COUNT;
       }
       needsRefresh = true;
-    }
-    else if(button == Buttons::BUTTON_E) { // Toggle backlight
+      break;
+    case BUTTON_E:
+      // Toggle backlight
       backlightEnabled = !backlightEnabled;
       Backlight::set(backlightEnabled);
-    }
-  }
+      break;
+
+    default: break;
+    } // end button select
+
+  } // end if button pending
 
   // If we are charging, refresh the display every second to make the charging animation
   if(ChargeStatus::get() == ChargeStatus::CHARGING) {
@@ -292,31 +337,22 @@ void loop() {
     }
   }
 
-  if(needsRefresh) {
-    if(logging) {
-      Display::draw(
-        temperatures,
-       // ambient,
-        graphChannel,
-        temperatureUnit,
-        fileName,
-        logIntervals[logInterval],
-        ChargeStatus::get(),
-        ChargeStatus::getBatteryLevel()
-      );
-    }
-    else {
-      Display::draw(
-        temperatures,
-       // ambient,
-        graphChannel,
-        temperatureUnit,
-        "Not logging",
-        logIntervals[logInterval],
-        ChargeStatus::get(),
-        ChargeStatus::getBatteryLevel()
-      );
-    }
+  // Draw the display
+  if(needsRefresh)
+  {
+    char * ptr = NULL;
+    if(logging) ptr = fileName;
+
+    Display::draw(
+      temperatures,
+      graphChannel,
+      temperatureUnit,
+      ptr,
+      logIntervals[logInterval],
+      ChargeStatus::get(),
+      ChargeStatus::getBatteryLevel()
+    );
+
   }
 
   // Sleep if we are on battery power
@@ -324,6 +360,8 @@ void loop() {
   if(ChargeStatus::get() == ChargeStatus::DISCHARGING) {
     Power::sleep();
   }
+
+  return;
 }
 
 
