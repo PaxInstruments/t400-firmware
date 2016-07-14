@@ -61,11 +61,14 @@ int16_t maxTempInt;
 // Prints an int and returns the pointer to buffer
 #define printi(B,I)   (sprintf(buf,"%d",(I)),(B))
 
-char * printtemp2(char * buf, int16_t temp)
+char * printtemp(char * buf, int16_t temp)
 {
     uint8_t tmp8;
     tmp8 = (uint8_t)abs(temp%10);
-    sprintf(buf,"% 4d.%d",((temp)/10),tmp8);
+    if(temp>9999)
+        sprintf(buf,"%d.%d",((temp)/10),tmp8);
+    else
+        sprintf(buf,"% 4d.%d",((temp)/10),tmp8);
     return buf;
 }
 
@@ -148,7 +151,7 @@ void updateGraphScaling()
   if(delta<4) maxTempInt=minTempInt+4;
 
   graphScale = (uint32_t)((delta + 39) / 40);  // TODO: better rounding strategy
-  if(graphScale<=0) graphScale = 1;
+  if(graphScale==0) graphScale = 1;
 
   // graphScale is an int multiplier.  Normally we display 4 temperatures.
   // maxTempInt is the highest temp in the dataset
@@ -156,18 +159,9 @@ void updateGraphScaling()
 
   // Calculate the number of axes digits to display
   axisDigits = 2;
-#if 0
-  if((min + (graphScale*4)) > 9999 || min < -999) {
-    axisDigits = 4;
-  }
-  else if((min + (graphScale*4)) > 999 || min < -99) {
-    axisDigits = 3;
-  }
-#else
-  // These are in 1/10th, is min<-10.0 || max>99.9
-  if(min<-100 || max>999) axisDigits = 3;
-  else if(min<-999 || max>9999) axisDigits = 4;
-#endif
+  // These are in 1/10th, is min<-99.0 || max>999.9
+  if(min<-999 || (max+(graphScale*4)) >9999) axisDigits = 4;
+  else if(min<-100 || (max+(graphScale*4))>999) axisDigits = 3;
 
 
   return;
@@ -180,6 +174,14 @@ void setup()
   u8g.setColorIndex(1);             // Set color mode to binary
   u8g.setFont(u8g_font_5x8r);       // Select font. See https://code.google.com/p/u8glib/wiki/fontsize
   return;
+}
+
+uint8_t numlength(int16_t num)
+{
+    if(num>999 || num<-99) return 4;
+    if(num>99 || num<-9) return 3;
+    if(num>9 || num<0) return 2;
+    return 1;
 }
 
 void draw(
@@ -218,9 +220,17 @@ void draw(
       // Draw axis labels and marks
       for(uint8_t interval = 0; interval < GRAPH_INTERVALS; interval++)
       {
-        u8g.drawPixel(CHARACTER_SPACING*axisDigits + 1, 61 - interval*10);
-        sprintf(buf, "%d", (minTempInt/10) + graphScale*interval);
-        u8g.drawStr(0, DISPLAY_HEIGHT - interval*10,  buf);
+          uint8_t spaces=0,x;
+          int16_t tmp16;
+          u8g.drawPixel(CHARACTER_SPACING*axisDigits + 1, 61 - interval*10);
+          tmp16 = (minTempInt/10) + graphScale*interval;
+          // Add spaces for right justified
+          spaces = axisDigits-numlength(tmp16);
+          for(x=0;x<spaces;x++)
+            sprintf(&(buf[x])," ");
+          sprintf(&(buf[spaces]), "%d", tmp16);
+          u8g.drawStr(0, DISPLAY_HEIGHT - interval*10,  buf);
+
       }
       
        // Calculate how many graph points to display.
@@ -359,16 +369,16 @@ void draw(
         {
           u8g.drawStr(sensor*34,   6,  " ----");
         }else {
-          u8g.drawStr(sensor*34, 6, printtemp2(buf,temperatures[sensor]));
+          u8g.drawStr(sensor*34, 6, printtemp(buf,temperatures[sensor]));
         }
       }
 
       #elif 0
       // DEBUG: Write variable values to the spaces rather than the current temp
-      u8g.drawStr(0*34,   6,  printtemp2(buf,temperatures[0]));
-      u8g.drawStr(1*34,   6,  printtemp2(buf,temperatures[1]));
-      u8g.drawStr(2*34,   6,  printtemp2(buf,temperatures[2]));
-      u8g.drawStr(3*34,   6,  printtemp2(buf,temperatures[3]));
+      u8g.drawStr(0*34,   6,  printtemp(buf,temperatures[0]));
+      u8g.drawStr(1*34,   6,  printtemp(buf,temperatures[1]));
+      u8g.drawStr(2*34,   6,  printtemp(buf,temperatures[2]));
+      u8g.drawStr(3*34,   6,  printtemp(buf,temperatures[3]));
       #else
       // DEBUG: Write variable values to the spaces rather than the current temp
       u8g.drawStr(0*34,   6,  printi(buf,loopcount));

@@ -222,8 +222,15 @@ static void readTemperatures() {
 
     // DEBUG: Fake some data
     #if 0
-    temperatures_int[0] = 123; //12.3C
-    temperatures_int[1] = 345; // 34.5C
+    // EXTREME!
+    temperatures_int[0] = 30000; // 3270.9 C
+    temperatures_int[1] = -2732; // -273.2C (abs zero)
+    temperatures_int[2] = OUT_OF_RANGE_INT;
+    temperatures_int[3] = OUT_OF_RANGE_INT;
+    #endif
+    #if 0
+    temperatures_int[0] = 1234;
+    temperatures_int[1] = -345;
     temperatures_int[2] = OUT_OF_RANGE_INT;
     temperatures_int[3] = OUT_OF_RANGE_INT;
     #endif
