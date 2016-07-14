@@ -11,6 +11,8 @@
 
 namespace Display {
 
+#define U8G_PAGE_HEIGHT     8
+
 #define TEMP_MAX_VALUE_I    (32760)
 #define TEMP_MIN_VALUE_I    (-32760)
 
@@ -39,23 +41,6 @@ uint8_t axisDigits;     // Number of digits to display in the axis labels (ex: '
 
 int16_t minTempInt;
 int16_t maxTempInt;
-
-// Get a reference to the graph point at the specified 
-// uint8_t& graphPoint(uint8_t sensor, uint8_t point)
-// @param sensor Sensor to use (0-3)
-// @param point Index of the graph point to access (0=current point, 1=last point, etc)
-// @return reference to the memory address of the specified graph point
-#define graphPoint(sensor, point) (graph[sensor][(point + graphCurrentPoint)%MAXIMUM_GRAPH_POINTS])
-
-// const uint8_t yOffset = DISPLAY_HEIGHT - 3;
-// Convert a temperature measurement from temperature space to graph space
-// uint8_t temperatureToGraphPoint(temperature)
-// @param temperature Temperature measurement, in any unit
-// @param scale Graph scale, in in degrees per pixel
-// @param min Minimum temperature value, in temperature
-// @return representation of the temperature in graph space
-#define temperatureToGraphPoint(temperature, scale, min) (DISPLAY_HEIGHT - 3 - (temperature-min)/scale*10)
-//#define rescaleGraphPoint(point, originalScale, originalMin, newScale, newMin) ((point - ))
 
 // Helper functions
 // Prints an int and returns the pointer to buffer
@@ -108,11 +93,9 @@ void updateGraphData(int16_t* temperatures)
     }
 
     // Stick the new temperature in the array
-    // This converts the temperature to a int16_t which is in 1/10ths of
-    // a degree
     for(uint8_t sensor = 0; sensor < SENSOR_COUNT; sensor++)
     {
-        graph[sensor][(graphCurrentPoint%MAXIMUM_GRAPH_POINTS)] = temperatures[sensor];
+        graph[sensor][graphCurrentPoint] = temperatures[sensor];
     }
 
   return;
@@ -153,7 +136,7 @@ void updateGraphScaling()
   graphScale = (uint32_t)((delta + 39) / 40);  // TODO: better rounding strategy
   if(graphScale==0) graphScale = 1;
 
-  // graphScale is an int multiplier.  Normally we display 4 temperatures.
+  // graphScale is an int multiplier.  Normally we display 5 temperatures.
   // maxTempInt is the highest temp in the dataset
   // minTempInt is the lowest temp in the dataset
 
@@ -184,6 +167,27 @@ uint8_t numlength(int16_t num)
     return 1;
 }
 
+uint8_t temperature_to_pixel(int16_t temp)
+{
+    uint16_t p;
+    // This gets the delta between our measurement and the min value (which
+    // is the bottom of the chart
+    // Example: if minTempInt=300, p_int=325. p = 25, it is 2.5deg higher
+    p = (temp -  minTempInt);
+    // Now we need to keep all points within the drawing window.  Each temperature step
+    // takes up 10 pixels of height (But we are already in 1/10th of degrees!). But if
+    // we scaled, scale our value down, this means we need to divide the delta by
+    // the scale value
+    p = p / graphScale;
+
+    // This gets us a scaled pixel offset.  So at scale 1. 25/1 = 25
+    // This means we put the pixel 25 pixels above the low. Since the
+    // low is always (DISPLAY_HEIGHT-3) pixels from the top, we take this
+    // value and remove our pos.
+    p = (DISPLAY_HEIGHT - 3)-p;
+    return (uint8_t)p;
+}
+
 void draw(
   int16_t* temperatures,
   uint8_t graphChannel,
@@ -198,7 +202,9 @@ void draw(
   char buf[8];
   uint8_t page = 0;
   uint8_t x;
-  uint8_t lastPoint;
+  uint8_t debug_point=0;
+  int16_t debug_point2=0;
+  uint8_t num_points;
   uint8_t battX = 128;
   uint8_t battY = 9;
 
@@ -206,83 +212,98 @@ void draw(
   u8g.firstPage();
   do {
 
+    // Each 'page' is a band of 10 pixels across the screen
     // Draw temperature graph
     switch(page){
     case 5:
         u8g.drawLine( 0, 16, 132,  16);    // hline between status bar and graph
         // no break
     default:
-      
-      // Draw the separator line between axes labels and legend
-      u8g.drawLine(CHARACTER_SPACING*axisDigits + 2, DISPLAY_HEIGHT,
-                   CHARACTER_SPACING*axisDigits + 2, 18);
-    
-      // Draw axis labels and marks
-      for(uint8_t interval = 0; interval < GRAPH_INTERVALS; interval++)
-      {
-          uint8_t spaces=0,x;
-          int16_t tmp16;
-          u8g.drawPixel(CHARACTER_SPACING*axisDigits + 1, 61 - interval*10);
-          tmp16 = (minTempInt/10) + graphScale*interval;
-          // Add spaces for right justified
-          spaces = axisDigits-numlength(tmp16);
-          for(x=0;x<spaces;x++)
-            sprintf(&(buf[x])," ");
-          sprintf(&(buf[spaces]), "%d", tmp16);
-          u8g.drawStr(0, DISPLAY_HEIGHT - interval*10,  buf);
+    {
+        // This runs when we are on page 1-5
+        uint8_t p;
+        uint8_t index;
+        uint8_t bot,top;
 
-      }
-      
-       // Calculate how many graph points to display.
-      lastPoint = graphPoints;
-      
-       // If the axis indicies are >2 character length, scale back the graph.
-      x = MAXIMUM_GRAPH_POINTS - (axisDigits - 2)*5;
-      if(lastPoint > x) lastPoint = x;
+        // We only write a horizontal row within a range for each page, this is
+        // called 6 times and we loop the whole temperature buffer each time!
+        // TODO: Make more efficient
 
-      // Draw the temperature graph for each sensor
-      for(uint8_t sensor = 0; sensor < 4; sensor++)
-      {
-        int8_t p;
-        float p_float;
-        int16_t* starting_point;
-        int16_t* wrap_point;
+        bot = 63-(page*U8G_PAGE_HEIGHT);
+        top = bot-(U8G_PAGE_HEIGHT-1);
 
-        // if the sensor is out of range, don't show it
-        if(temperatures[sensor] == OUT_OF_RANGE_INT || (sensor != graphChannel && graphChannel < 4) )
-          continue;
+        // Draw the separator line between axes labels and legend
+        u8g.drawLine(CHARACTER_SPACING*axisDigits + 2, bot,
+                   CHARACTER_SPACING*axisDigits + 2, top);
 
-/******************* Float Math Start ********************/
-        // Get the latest point from the array
-        p_float = ((float)(graphPoint(sensor, 0)))/10.0;
-        p = temperatureToGraphPoint(p_float,graphScale, (((float)(minTempInt))/10.0) );
-/******************* Float Math End ********************/
+        // TODO: This draw function is called for each page.  The switch
+        // statement runs this block of code for pages 0-5.  This means all
+        // the code below is run 6 times!  This is super inefficient.
+        // Should fix but this is how the u8g library works :-/
 
-        // Draw a string the the latest point
-        u8g.drawStr(113+5*sensor, 3 + p, printi(buf,sensor+1));
-
-        // Now, draw all the points
-        starting_point = &graph[sensor][graphCurrentPoint];  // Starting address of the graph data
-        wrap_point = &graph[sensor][MAXIMUM_GRAPH_POINTS];   // If the address pointer reaches this, reset it to graph[sensor][0]
-        for(uint8_t point = 0; point < lastPoint; point++)
+        // Draw axis labels and marks
+        for(uint8_t interval = 0; interval < GRAPH_INTERVALS; interval++)
         {
-/******************* Float Math Start ********************/
-          p_float = ((float)(*(starting_point++)))/10.0;
-          p = temperatureToGraphPoint(p_float,graphScale, (((float)(minTempInt))/10.0) );
-/******************* Float Math End ********************/
-          u8g.drawPixel(MAXIMUM_GRAPH_POINTS+12-point,p);
-          if(starting_point == wrap_point) {
-            starting_point = &graph[sensor][0];
-          }
-        } // end for point
+            uint8_t spaces=0,x;
+            int16_t tmp16;
+            u8g.drawPixel(CHARACTER_SPACING*axisDigits + 1, 63-(interval*10)-3);
+            tmp16 = (minTempInt/10) + (graphScale*interval);
+            // TODO: Write a space string, then over write with number, drrr
+            // Add spaces for right justified
+            spaces = axisDigits-numlength(tmp16);
+            for(x=0;x<spaces;x++)
+                sprintf(&(buf[x])," ");
+            sprintf(&(buf[spaces]), "%d", tmp16);
+            u8g.drawStr(0, DISPLAY_HEIGHT - interval*10,  buf);
+        }
 
-      }// end for sensor
 
+        // Calculate how many graph points to display.
+        // If the number of axis digits is >2, scale back how many
+        // graph points to show
+        num_points = graphPoints;
+        x = MAXIMUM_GRAPH_POINTS - ((axisDigits - 2)*5);
+        if(x<num_points) num_points = x;
 
-      break;
+        // Draw the temperature graph for each sensor
+        for(uint8_t sensor = 0; sensor < 4; sensor++)
+        {
+            // if the sensor is out of range, don't show it. If we are showing one
+            // channel, ignore the others
+            if(temperatures[sensor] == OUT_OF_RANGE_INT || (sensor != graphChannel && graphChannel < 4) )
+              continue;
+
+            // Get the position of the latest point
+            p = temperature_to_pixel(graph[sensor][graphCurrentPoint]);
+            if(sensor==3)
+            {
+                debug_point = p;
+                debug_point2 = graph[sensor][graphCurrentPoint];
+            }
+
+            // Draw the channel number at the latest point
+            u8g.drawStr(113+5*sensor, 3 + p, printi(buf,sensor+1));
+
+            // Now, draw all the points
+            index = graphCurrentPoint;
+            for(uint8_t point = 0; point < num_points; point++)
+            {
+                p = temperature_to_pixel(graph[sensor][index]);
+                // Draw pixel at X, Y. X is # of pixels from the left
+                u8g.drawPixel(MAXIMUM_GRAPH_POINTS+12-point,p);
+                // Go to next pixel
+                index++;
+                // Wrap when we hit the end of the array
+                if(index>=MAXIMUM_GRAPH_POINTS) index = 0;
+
+            } // end for point
+
+        }// end for sensor
+
+    }
+    break;
 
     case 6:
-
       // Draw status bar
       //u8g.drawStr(0,  15, printi(buf,ambient));         // Ambient temperature
       u8g.drawStr(0,  15, "TypK"); 
@@ -360,7 +381,7 @@ void draw(
         const uint8_t* pos = lines[i];
         u8g.drawLine(pos[0], pos[1], pos[2], pos[3]);
       }
-      
+
       // Display temperature readings  
       #if 1
       for(uint8_t sensor = 0; sensor < SENSOR_COUNT; sensor++)
@@ -381,10 +402,10 @@ void draw(
       u8g.drawStr(3*34,   6,  printtemp(buf,temperatures[3]));
       #else
       // DEBUG: Write variable values to the spaces rather than the current temp
-      u8g.drawStr(0*34,   6,  printi(buf,loopcount));
-      //u8g.drawStr(1*34,   6,  printi(buf,minTempInt));
-      //u8g.drawStr(2*34,   6,  printi(buf,graphScale));
-      //u8g.drawStr(3*34,   6,  " ----");
+      u8g.drawStr(0*34,   6,  printi(buf,graphScale));
+      u8g.drawStr(1*34,   6,  printi(buf,minTempInt));
+      u8g.drawStr(2*34,   6,  printi(buf,debug_point));
+      u8g.drawStr(3*34,   6,  printi(buf,debug_point2));
       #endif
 
       break;

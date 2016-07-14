@@ -89,16 +89,18 @@ void rotateTemperatureUnit() {
   return;
 }
 
-// Convert temperature from celcius to the new unit
-double convertTemperature(double Celcius) {
+int16_t convertTemperatureInt(int16_t celcius) {
   switch(temperatureUnit){
   case TEMPERATURE_UNITS_F:
-    return 9.0/5.0*Celcius+32;
+      celcius = celcius*18;
+      celcius = celcius/10;
+      celcius = celcius + 320;
+      return celcius;
   case TEMPERATURE_UNITS_K:
-    return Celcius + 273.15;
+    return celcius + 2732;
   default: break;
   }
-  return Celcius;
+  return celcius;
 }
 
 // This function runs once. Use it for setting up the program state.
@@ -154,6 +156,53 @@ void stopLogging() {
   return;
 }
 
+void fake_data(){
+    // DEBUG: Fake some data
+    #if 0
+    // EXTREME!
+    temperatures_int[0] = 30000; // 3270.9 C
+    temperatures_int[1] = -2732; // -273.2C (abs zero)
+    temperatures_int[2] = OUT_OF_RANGE_INT;
+    temperatures_int[3] = OUT_OF_RANGE_INT;
+    #endif
+    #if 0
+    temperatures_int[0] = 1234;
+    temperatures_int[1] = -345;
+    temperatures_int[2] = OUT_OF_RANGE_INT;
+    temperatures_int[3] = OUT_OF_RANGE_INT;
+    #endif
+    #if 0
+    #define OFFSET  30.0
+    #define SCALE   10.0
+    #define ADD     0.05
+    static double val=0.0;
+    double tmpdbl;
+    tmpdbl = ((SCALE*sin(val))+OFFSET)*10;
+    temperatures_int[0] = (int16_t)tmpdbl;
+    temperatures_int[1] = (int16_t)tmpdbl+5.0;
+    val += ADD;
+    #endif
+    #if 0
+    static int16_t val=300;
+    static int16_t step=5;
+    temperatures_int[0] = val;
+    temperatures_int[1] = val+50;
+    temperatures_int[2] = val+100;
+    temperatures_int[3] = val+150;
+    val+=step;
+    if(val>=400 || val<= 200) step=step*-1;
+    #endif
+
+#if 0
+    temperatures_int[0] = convertTemperatureInt(temperatures_int[0]);
+    temperatures_int[1] = convertTemperatureInt(temperatures_int[1]);
+    temperatures_int[2] = convertTemperatureInt(temperatures_int[2]);
+    temperatures_int[3] = convertTemperatureInt(temperatures_int[3]);
+#endif
+
+    return;
+}
+
 static void readTemperatures() {
   int32_t measuredVoltageUv;
   int32_t compensatedVoltage;
@@ -207,35 +256,26 @@ static void readTemperatures() {
     // Given a voltage, get the temperature
     tmpflt = microvolts_to_celcius(compensatedVoltage);
 
-    // Now convert to C, F, K
-    if(tmpflt != OUT_OF_RANGE)
-    {
-      //temperature = convertTemperature(temperature + ambient_float);
-      tmpflt = convertTemperature(tmpflt);
-    }
-
-    // Convert from float to int and save
+    // Convert from float to int
     tmpint16 = ((int16_t)(tmpflt*10));
-    temperatures_int[channel] = tmpint16;
 
     /******************* Float Math End ********************/
 
-    // DEBUG: Fake some data
-    #if 0
-    // EXTREME!
-    temperatures_int[0] = 30000; // 3270.9 C
-    temperatures_int[1] = -2732; // -273.2C (abs zero)
-    temperatures_int[2] = OUT_OF_RANGE_INT;
-    temperatures_int[3] = OUT_OF_RANGE_INT;
-    #endif
-    #if 0
-    temperatures_int[0] = 1234;
-    temperatures_int[1] = -345;
-    temperatures_int[2] = OUT_OF_RANGE_INT;
-    temperatures_int[3] = OUT_OF_RANGE_INT;
-    #endif
+    // Now convert to C, F, K
+    if(tmpint16 != OUT_OF_RANGE_INT)
+    {
+      //temperature = convertTemperature(temperature + ambient_float);
+      tmpint16 = convertTemperatureInt(tmpint16);
+    }
+
+    temperatures_int[channel] = tmpint16;
+
+
+
 
   } // end for loop
+
+  fake_data();
 
   return;
 }
@@ -376,6 +416,8 @@ void loop() {
   {
     char * ptr = NULL;
     if(logging) ptr = fileName;
+
+    needsRefresh = false;
 
     Display::draw(
       temperatures_int,
