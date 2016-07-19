@@ -61,12 +61,20 @@ boolean backlightEnabled = true;
 #define LOG_INTERVAL_COUNT 6
 const uint8_t logIntervals[LOG_INTERVAL_COUNT] = {1, 2, 5, 10, 30, 60};
 
+// Timer 1 related variables
+#if 0
+#define TIMER_ISR_MS        10
+uint16_t m_sample_interval_ms = TIMER_ISR_MS;
+uint16_t m_timer_isr_counter_limit = 1;
+bool m_sample_flag2 = false;     // If true, the display should be redrawn
+#endif
 
-uint8_t logInterval    = 0; // currently selected log interval
+uint8_t m_logInterval    = 0; // currently selected log interval
 boolean logging = false;    // True if we are currently logging to a file
 
 
-bool timeToSample = false;  // If true, the display should be redrawn
+bool m_sample_flag = false;    // If true, the display should be redrawn
+
 uint8_t isrTick = 0;        // Number of 1-second tics that have elapsed since the last sample
 uint8_t lastIsrTick = 0;    // Last tick that we redrew the screen
 uint32_t logTimeSeconds;    // Number of seconds that have elapsed since logging began
@@ -136,6 +144,11 @@ void setup(void) {
 
   Buttons::setup();
 
+  //config_sample_time_ms(1000);
+
+  // Kick off the ADC sampling loop
+  adc_start_next_conversion();
+
   return;
 }
 
@@ -182,7 +195,7 @@ void fake_data(){
     temperatures_int[1] = (int16_t)tmpdbl+5.0;
     val += ADD;
     #endif
-    #if 0
+    #if 1
     static int16_t val=300;
     static int16_t step=5;
     temperatures_int[0] = val;
@@ -193,7 +206,7 @@ void fake_data(){
     if(val>=400 || val<= 200) step=step*-1;
     #endif
 
-#if 0
+#if 1
     temperatures_int[0] = convertTemperatureInt(temperatures_int[0]);
     temperatures_int[1] = convertTemperatureInt(temperatures_int[1]);
     temperatures_int[2] = convertTemperatureInt(temperatures_int[2]);
@@ -203,42 +216,43 @@ void fake_data(){
     return;
 }
 
+uint8_t m_channel_index = SENSOR_COUNT;
+static void adc_start_next_conversion()
+{
+    m_channel_index = (m_channel_index+1);
+    if(m_channel_index>=SENSOR_COUNT) m_channel_index=0;
+    thermocoupleAdc.startMeasurement(temperatureChannels[m_channel_index]);
+    return;
+}
+
+static int16_t adc_read_ambient()
+{
+    int32_t tmpint32;
+    int16_t tmpint16;
+    // This gets the temperature as an integer which is °C times 16.
+    tmpint32 = ambientSensor.readTempC16(AMBIENT);
+    tmpint32 = tmpint32 >> 4; // This divides the temperature by 16
+    tmpint16 = (tmpint32 * 10); // Get into 1/10ths
+    return tmpint16;
+}
+
 static void readTemperatures() {
-  int32_t measuredVoltageUv;
-  int32_t compensatedVoltage;
-  int32_t tmpint32;
-  int16_t tmpint16=0;
-  float tmpflt;
+    int32_t measuredVoltageUv;
+    int32_t compensatedVoltage;
+    int32_t tmpint32;
+    int16_t tmpint16=0;
+    float tmpflt;
 
-  // This gets the temperature as an integer which is °C times 16.
-  tmpint32 = ambientSensor.readTempC16(AMBIENT);
-  tmpint32 = tmpint32 >> 4; // This divides the temperature by 16
-  ambient = tmpint32 * 10; // Get into 1/10ths
+    // Skip if we don't have a temperature to measure?
+    //if(!thermocoupleAdc.measurementReady()) return;
 
-  // ADC read loop: Start a measurement, wait until it is finished, then record it
-  for(uint8_t channel = 0; channel < SENSOR_COUNT; channel++)
-  {
+    // This gets the temperature as an integer
+    ambient = adc_read_ambient();
 
-    // TODO: There has to be a better way.  What about kicking the measurement off
-    // and then continuing to do the mainloop.  Then once there is a measurement
-    // that is ready we process it. This will allow us to do the display updating
-    // while the ADC is busy, increasing throughput.  This could even get us
-    // sub-second processing.  In theory we can do 1/4 sec processing
+    // This function should be called when there is a measurement ready
+    // to be read.  This value is the temperature for channel stored
+    // in m_channel_index
 
-    // NOTE: This is a big block, 0.066 sec/measurement * 4 channels = 0.264 sec
-
-    thermocoupleAdc.startMeasurement(temperatureChannels[channel]);
-    #if 0
-    do {
-      // Delay a while. At 16-bit resolution, the ADC can do a speed of 1/15 = .066seconds/cycle
-      // Let's wait a little longer than that in case there is set up time for changing channels.
-      delay(70);
-    } while(!thermocoupleAdc.measurementReady());
-    #else
-    // NOTE: Why delay?  This is just a busy loop, so it should exit as soon as there
-    // is valid data.  If we delay we could miss it by a few ms, which isn't efficient
-    while(!thermocoupleAdc.measurementReady());
-    #endif
 
     // getMeasurementUv returns an int32_t which is the value in micro volts for this channel
     tmpint32 = thermocoupleAdc.getMeasurementUv();
@@ -268,16 +282,12 @@ static void readTemperatures() {
       tmpint16 = convertTemperatureInt(tmpint16);
     }
 
-    temperatures_int[channel] = tmpint16;
+    temperatures_int[m_channel_index] = tmpint16;
 
+    // We are done with this channel, kick off the next one
+    adc_start_next_conversion();
 
-
-
-  } // end for loop
-
-  fake_data();
-
-  return;
+    return;
 }
 
 static void writeOutputs() {
@@ -310,7 +320,7 @@ static void writeOutputs() {
 // Reset the tick counter, so that a new measurement takes place within 1 second
 void resetTicks() {
   noInterrupts();
-  isrTick = logIntervals[logInterval]-1; // TODO: This is a magic number
+  isrTick = logIntervals[m_logInterval]-1; // TODO: This is a magic number
   logTimeSeconds = 0;
   interrupts();
   return;
@@ -320,20 +330,33 @@ void resetTicks() {
 // Taking measurements
 // Updating the screen
 void loop() {
-  bool needsRefresh = false;  // If true, the display needs to be updated
+  bool refresh_display_flag = false;  // If true, the display needs to be updated
 
-  if(timeToSample) {
-    timeToSample = false;
+  // This will read temperatures as fast as we can, this decouples the
+  // slow reading from blocking the rest of the system
+  if(thermocoupleAdc.measurementReady())
+      readTemperatures();
 
-    readTemperatures();
+  // This locks in the samples into the array and does some other stuff. This
+  // controls the sample rate of the data
+  if(m_sample_flag) {
+    m_sample_flag = false;
+
+
+    // DEBUG, force fake values for testing
+    fake_data();
 
     //DS3231_get(&rtcTime);
 
+    // Write the data to serial AND the SD card
     writeOutputs();
+
+    // Update some graph data.
     Display::updateGraphData(temperatures_int);
     Display::updateGraphScaling();
 
-    needsRefresh = true;
+    // Indicate we want to redraw the display
+    refresh_display_flag = true;
   }
 
   // Check for button presses
@@ -355,25 +378,25 @@ void loop() {
       #if SD_LOGGING_ENABLED
       // NOTE: Logging takes up 30% of the flash!!!
       if(!logging) {
-        startLogging();
-      }
-      else {
-        stopLogging();
+          // This will block for a bit
+          startLogging();
+      } else {
+          stopLogging();
       }
       resetTicks();
-      needsRefresh = true;
+      refresh_display_flag = true;
       #endif
       break;
 
     case BUTTON_B:
       // Cycle log interval
       if(!logging) {
-        logInterval = (logInterval + 1) % LOG_INTERVAL_COUNT;
+        m_logInterval = (m_logInterval + 1) % LOG_INTERVAL_COUNT;
         resetTicks();
 
         Display::resetGraph();  // Reset the graph, to keep the x axis consistent
         resetTicks();
-        needsRefresh = true;
+        refresh_display_flag = true;
       }
       break;
     case BUTTON_C:
@@ -381,7 +404,7 @@ void loop() {
       if(!logging) {
         rotateTemperatureUnit();
         resetTicks();
-        needsRefresh = true;
+        refresh_display_flag = true;
       }
       break;
     case BUTTON_D:
@@ -390,7 +413,7 @@ void loop() {
       while(graphChannel < 4 & temperatures_int[graphChannel] == OUT_OF_RANGE_INT) {
         graphChannel = (graphChannel + 1) % GRAPH_CHANNELS_COUNT;
       }
-      needsRefresh = true;
+      refresh_display_flag = true;
       break;
     case BUTTON_E:
       // Toggle backlight
@@ -406,25 +429,26 @@ void loop() {
   // If we are charging, refresh the display every second to make the charging animation
   if(ChargeStatus::get() == ChargeStatus::CHARGING) {
     if(lastIsrTick != isrTick) {
-      needsRefresh = true;
+      refresh_display_flag = true;
       lastIsrTick = isrTick;
     }
   }
 
   // Draw the display
-  if(needsRefresh)
+  if(refresh_display_flag)
   {
     char * ptr = NULL;
     if(logging) ptr = fileName;
 
-    needsRefresh = false;
+    refresh_display_flag = false;
 
+    // Actual draw of display, takes a bit of time
     Display::draw(
       temperatures_int,
       graphChannel,
       temperatureUnit,
       ptr,
-      logIntervals[logInterval],
+      logIntervals[m_logInterval],
       ChargeStatus::get(),
       ChargeStatus::getBatteryLevel()
     );
@@ -442,13 +466,122 @@ void loop() {
 
 
 // 1 Hz interrupt from RTC
+// TODO: Why not use a timer?
 ISR(INT2_vect)
 {
-  isrTick = (isrTick + 1)%(logIntervals[logInterval]);
+  isrTick = (isrTick + 1)%(logIntervals[m_logInterval]);
   logTimeSeconds++;
 
   if(isrTick == 0) {
-    timeToSample = true;
+    m_sample_flag = true;
   }
   return;
 }
+
+/**********************************************************
+ * Timer 1 functions
+ *********************************************************/
+#if 0
+void config_sample_time_ms(uint16_t time_ms)
+{
+    timer1_stop();
+
+    // This is how many ms is in each sample
+    m_sample_interval_ms = time_ms;
+    // This is the count limit for the timer
+    m_timer_isr_counter_limit = (time_ms/TIMER_ISR_MS);
+    // Configure the timer
+    timer1_setup(TIMER_ISR_MS);
+
+    // Start timer
+    timer1_start();
+
+    return;
+}
+
+// Setup timer 1 but don't start it
+// _clockTimeRes is the number of milliseconds
+void timer1_setup(uint8_t _clockTimeRes)
+{
+    uint16_t tmpu16;
+    cli();
+
+    // Clear timer 1
+    TCCR1A = 0;
+    TCCR1B = 0;
+
+    // set Compare Match value:
+    // ATmega32U crystal is 16MHz
+    // With prescale = 64
+    // timer resolution = 1/( 16000000 /64) = 250000Hz = 0.000004 seconds. 1ms=250 counts
+
+    // target time = timer resolution * (# timer counts + 1)
+    // so timer counts = (target time)/(timer resolution) -1
+    // For 1 ms interrupt, timer counts = 1E-3/4E-6 - 1 = 249
+    tmpu16 = (uint16_t)(_clockTimeRes * 249);
+
+    // DEBUG, 10ms
+    tmpu16 = 2490;
+
+    // Maximum time is 263ms
+    OCR1A = tmpu16;
+
+    // Turn on CTC mode:
+    TCCR1B |= (1 << WGM12);
+
+    // Enable timer compare interrupt:
+    TIMSK1 |= (1 << OCIE1A);
+
+    // Interrupt enable
+    sei();
+
+    return;
+}
+
+void timer1_start()
+{
+    cli();
+
+    // Start the timer 1 counting, with prescaler 64
+    TCCR1B |= (1 << CS11) | (1 << CS10);
+    // Start the timer counting, with prescaler 1024
+    //TCCR1B |= (1 << CS12) | (1 << CS10);
+
+    sei();
+}
+
+void timer1_stop()
+{
+    cli();
+    //Stop the timer counting
+    TCCR1B &= 0B11111000;
+    sei();
+}
+
+void timer1_reset()
+{
+    cli();
+    TCCR1A = 0;  // set all bits of Timer/Counter 1 Control Register to 0
+    TCCR1B = 0;
+    // Reset the Counter value to 0:
+    TCNT1 = 0;
+    OCR1A = 0;
+
+    sei();
+}
+
+// This code is triggered every time the global clock ticks
+uint8_t isr_counter=0;
+ISR(TIMER1_COMPA_vect)
+{
+    isr_counter+=1;
+    if(isr_counter>=m_timer_isr_counter_limit)
+    {
+        isr_counter = 0;
+        m_sample_flag2 = true;
+    }
+    return;
+}
+#endif
+
+//eof
