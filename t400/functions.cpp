@@ -346,8 +346,14 @@ void draw(
           u8g.drawStr(40, 15,fileName);
 
       // Interval
-      u8g.drawStr( 100, 15, printi(buf,logInterval));
-      u8g.drawStr(110, 15, "s");
+      if(logInterval==0)
+      {
+          u8g.drawStr( 100, 15, "500ms");
+      }else{
+          sprintf(buf,"%2d",logInterval);
+          u8g.drawStr( 103, 15, buf);
+          u8g.drawStr(113, 15, "s");
+      }
 
       // Draw battery
       switch(bStatus){

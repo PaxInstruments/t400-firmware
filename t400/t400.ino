@@ -58,22 +58,23 @@ int16_t ambient =  0;
 boolean backlightEnabled = true;
 
 // Available log intervals, in seconds
-#define LOG_INTERVAL_COUNT 6
-const uint8_t logIntervals[LOG_INTERVAL_COUNT] = {1, 2, 5, 10, 30, 60};
+#define LOG_INTERVAL_COUNT  7
+const uint8_t logIntervals[LOG_INTERVAL_COUNT] = {0, 1, 2, 5, 10, 30, 60};
 
 // Timer 1 related variables
-#if 0
-#define TIMER_ISR_MS        10
+#if 1
+#define TIMER_ISR_MS        100
 uint16_t m_sample_interval_ms = TIMER_ISR_MS;
 uint16_t m_timer_isr_counter_limit = 1;
-bool m_sample_flag2 = false;     // If true, the display should be redrawn
 #endif
 
-uint8_t m_logInterval    = 0; // currently selected log interval
+// currently selected log interval (Default 0=0.5sec. MUST SET FLAG)
+uint8_t m_logInterval    = 0;
+bool flag_halfsecond = true;   // If true we are doing 1/2 second
+
 boolean logging = false;    // True if we are currently logging to a file
 
-
-bool m_sample_flag = false;    // If true, the display should be redrawn
+bool m_sample_flag = false;     // If true, the display should be redrawn
 
 uint8_t isrTick = 0;        // Number of 1-second tics that have elapsed since the last sample
 uint8_t lastIsrTick = 0;    // Last tick that we redrew the screen
@@ -145,7 +146,7 @@ void setup(void) {
 
   setupButtons();
 
-  //config_sample_time_ms(1000);
+  timer1_reset();
 
   // Kick off the ADC sampling loop
   adc_start_next_conversion();
@@ -321,9 +322,19 @@ static void writeOutputs()
 }
 
 // Reset the tick counter, so that a new measurement takes place within 1 second
-void resetTicks() {
+void resetTicks()
+{
+  uint8_t sec;
   noInterrupts();
-  isrTick = logIntervals[m_logInterval]-1; // TODO: This is a magic number
+  sec = logIntervals[m_logInterval];
+  if(sec>0){
+      isrTick = sec - 1;
+      flag_halfsecond = false;
+      timer1_stop();
+  }else{
+      isrTick = 0;
+      flag_halfsecond = true;
+  }
   logTimeSeconds = 0;
   interrupts();
   return;
@@ -403,9 +414,7 @@ void loop()
       if(!logging) {
         m_logInterval = (m_logInterval + 1) % LOG_INTERVAL_COUNT;
         resetTicks();
-
         resetGraph();  // Reset the graph, to keep the x axis consistent
-        resetTicks();
       }else{
           btn_disable_count = 3;
       }
@@ -482,11 +491,18 @@ void loop()
 // TODO: Why not use a timer?
 ISR(INT2_vect)
 {
-  isrTick = (isrTick + 1)%(logIntervals[m_logInterval]);
-  logTimeSeconds++;
-
-  if(isrTick == 0) {
-    m_sample_flag = true;
+  if(flag_halfsecond)
+  {
+      m_sample_flag = true;
+      // If half second processing, kick off the timer
+      config_sample_time_ms(500);
+  }else{
+      isrTick = (isrTick + 1)%(logIntervals[m_logInterval]);
+      logTimeSeconds++;
+      if(isrTick == 0)
+      {
+        m_sample_flag = true;
+      }
   }
 
   if(btn_disable_count>0) btn_disable_count--;
@@ -497,13 +513,13 @@ ISR(INT2_vect)
 /**********************************************************
  * Timer 1 functions
  *********************************************************/
-#if 0
+#if 1
 void config_sample_time_ms(uint16_t time_ms)
 {
     timer1_stop();
 
     // This is how many ms is in each sample
-    m_sample_interval_ms = time_ms;
+    //m_sample_interval_ms = time_ms;
     // This is the count limit for the timer
     m_timer_isr_counter_limit = (time_ms/TIMER_ISR_MS);
     // Configure the timer
@@ -527,17 +543,15 @@ void timer1_setup(uint8_t _clockTimeRes)
     TCCR1B = 0;
 
     // set Compare Match value:
-    // ATmega32U crystal is 16MHz
+    // t400 crystal is 8MHz
     // With prescale = 64
-    // timer resolution = 1/( 16000000 /64) = 250000Hz = 0.000004 seconds. 1ms=250 counts
+    // timer resolution = 1/( 8000000 /64) = 125000Hz = 0.000008 seconds. 1ms=125 counts
 
     // target time = timer resolution * (# timer counts + 1)
     // so timer counts = (target time)/(timer resolution) -1
-    // For 1 ms interrupt, timer counts = 1E-3/4E-6 - 1 = 249
-    tmpu16 = (uint16_t)(_clockTimeRes * 249);
-
-    // DEBUG, 10ms
-    tmpu16 = 2490;
+    // For 1 ms interrupt, timer counts = 1E-3/8E-6 - 1 = 124
+    tmpu16 = _clockTimeRes;
+    tmpu16 = (uint16_t)(tmpu16 * 124);
 
     // Maximum time is 263ms
     OCR1A = tmpu16;
@@ -594,7 +608,11 @@ ISR(TIMER1_COMPA_vect)
     if(isr_counter>=m_timer_isr_counter_limit)
     {
         isr_counter = 0;
-        m_sample_flag2 = true;
+
+        //Stop the timer counting
+        TCCR1B &= 0B11111000;
+
+        m_sample_flag = true;
     }
     return;
 }
