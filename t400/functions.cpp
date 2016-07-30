@@ -9,7 +9,6 @@
 #include "t400.h"
 #include "functions.h"
 
-namespace Display {
 
 #define U8G_PAGE_HEIGHT     8
 
@@ -24,6 +23,9 @@ const uint8_t lines[LINE_COUNT][4] = {
     {65,  0,  65,   7}, // vline between TC2 and TC3
     {99,  0,  99,   7}, // vline between TC3 and TC4
 };
+
+// Function prototypes for t400.ino
+int16_t convertTemperatureInt(int16_t celcius);
 
 // Graphical LCD
 U8GLIB_PI13264  u8g(LCD_CS, LCD_A0, LCD_RST); // Use HW-SPI
@@ -118,6 +120,7 @@ void updateGraphScaling()
        p = *ptr;
        if(p!=OUT_OF_RANGE_INT)
        {
+           p = convertTemperatureInt(p);
            if(p>max) max = p;
            if(p<min) min = p;
        }
@@ -150,7 +153,7 @@ void updateGraphScaling()
   return;
 }
 
-void setup()
+void setupDisplay()
 {
   u8g.setContrast(LCD_CONTRAST);    // Set contrast level
   u8g.setRot180();                  // Rotate screen
@@ -202,8 +205,8 @@ void draw(
   char buf[8];
   uint8_t page = 0;
   uint8_t x;
-  uint8_t debug_point=0;
-  int16_t debug_point2=0;
+  //uint8_t debug_point=0;
+  //int16_t debug_point2=0;
   uint8_t num_points;
   uint8_t battX = 128;
   uint8_t battY = 9;
@@ -268,18 +271,25 @@ void draw(
         // Draw the temperature graph for each sensor
         for(uint8_t sensor = 0; sensor < 4; sensor++)
         {
+            int16_t tmp16;
+
             // if the sensor is out of range, don't show it. If we are showing one
             // channel, ignore the others
             if(temperatures[sensor] == OUT_OF_RANGE_INT || (sensor != graphChannel && graphChannel < 4) )
               continue;
 
+            tmp16 = convertTemperatureInt(graph[sensor][graphCurrentPoint]);
+
             // Get the position of the latest point
-            p = temperature_to_pixel(graph[sensor][graphCurrentPoint]);
+            //p = temperature_to_pixel(graph[sensor][graphCurrentPoint]);
+            p = temperature_to_pixel(tmp16);
+#if 0
             if(sensor==3)
             {
                 debug_point = p;
                 debug_point2 = graph[sensor][graphCurrentPoint];
             }
+#endif
 
             // Draw the channel number at the latest point
             u8g.drawStr(113+5*sensor, 3 + p, printi(buf,sensor+1));
@@ -288,7 +298,9 @@ void draw(
             index = graphCurrentPoint;
             for(uint8_t point = 0; point < num_points; point++)
             {
-                p = temperature_to_pixel(graph[sensor][index]);
+                tmp16 = convertTemperatureInt(graph[sensor][index]);
+                //p = temperature_to_pixel(graph[sensor][index]);
+                p = temperature_to_pixel(tmp16);
                 // Draw pixel at X, Y. X is # of pixels from the left
                 u8g.drawPixel(MAXIMUM_GRAPH_POINTS+12-point,p);
                 // Go to next pixel
@@ -427,8 +439,6 @@ void clear() {
 
   return;
 }
-
-} // End namespace Display
 
 
 // TODO: What namespace is this then?

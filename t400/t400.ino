@@ -91,7 +91,7 @@ void rotateTemperatureUnit() {
   temperatureUnit = (temperatureUnit + 1) % TEMPERATURE_UNITS_COUNT;
 
   // Reset the graph so we don't have to worry about scaling it
-  Display::resetGraph();
+  //resetGraph();
 
   // TODO: Convert the current data to new units?
   return;
@@ -126,8 +126,8 @@ void setup(void) {
   Backlight::setup();
   Backlight::set(backlightEnabled);
 
-  Display::setup();
-  Display::resetGraph();
+  setupDisplay();
+  resetGraph();
 
   thermocoupleAdc.begin();
 
@@ -195,6 +195,7 @@ void fake_data(){
     temperatures_int[1] = (int16_t)tmpdbl+5.0;
     val += ADD;
     #endif
+
     #if 1
     static int16_t val=300;
     static int16_t step=5;
@@ -206,7 +207,7 @@ void fake_data(){
     if(val>=400 || val<= 200) step=step*-1;
     #endif
 
-#if 1
+#if 0
     temperatures_int[0] = convertTemperatureInt(temperatures_int[0]);
     temperatures_int[1] = convertTemperatureInt(temperatures_int[1]);
     temperatures_int[2] = convertTemperatureInt(temperatures_int[2]);
@@ -275,12 +276,14 @@ static void readTemperatures() {
 
     /******************* Float Math End ********************/
 
+#if 0
     // Now convert to C, F, K
     if(tmpint16 != OUT_OF_RANGE_INT)
     {
       //temperature = convertTemperature(temperature + ambient_float);
       tmpint16 = convertTemperatureInt(tmpint16);
     }
+#endif
 
     temperatures_int[m_channel_index] = tmpint16;
 
@@ -352,8 +355,8 @@ void loop() {
     writeOutputs();
 
     // Update some graph data.
-    Display::updateGraphData(temperatures_int);
-    Display::updateGraphScaling();
+    updateGraphData(temperatures_int);
+    updateGraphScaling();
 
     // Indicate we want to redraw the display
     refresh_display_flag = true;
@@ -367,7 +370,7 @@ void loop() {
     case BUTTON_POWER:
       // Disable power
       if(!logging) {
-        Display::clear();
+        clear();
         Backlight::set(0);
         Power::shutdown();
       }
@@ -394,7 +397,7 @@ void loop() {
         m_logInterval = (m_logInterval + 1) % LOG_INTERVAL_COUNT;
         resetTicks();
 
-        Display::resetGraph();  // Reset the graph, to keep the x axis consistent
+        resetGraph();  // Reset the graph, to keep the x axis consistent
         resetTicks();
         refresh_display_flag = true;
       }
@@ -443,7 +446,7 @@ void loop() {
     refresh_display_flag = false;
 
     // Actual draw of display, takes a bit of time
-    Display::draw(
+    draw(
       temperatures_int,
       graphChannel,
       temperatureUnit,

@@ -44,26 +44,22 @@ namespace Backlight {
 
 }
 
-namespace Display {
 
-  void resetGraph();
-  void updateGraphData(int16_t* temperatures);
-  void updateGraphScaling();
-  
-  void setup();
+void resetGraph();
+void updateGraphData(int16_t* temperatures);
+void updateGraphScaling();
 
-  void draw(
-    int16_t* temperatures,
-    uint8_t graphChannel,
-    uint8_t temperatureUnit,
-    char* fileName,
-    uint8_t logInterval,
-    ChargeStatus::State bStatus,
-    uint8_t batteryLevel
-    );
+void setupDisplay();
+
+void draw(int16_t* temperatures,
+        uint8_t graphChannel,
+        uint8_t temperatureUnit,
+        char* fileName,
+        uint8_t logInterval,
+        ChargeStatus::State bStatus,
+        uint8_t batteryLevel);
   
-  void clear();
-}
+void clear();
 
 // Converts the junction temperature into a voltage for offset
 // @param temperature reading from junction temperature sensor
