@@ -169,6 +169,7 @@ void stopLogging() {
   return;
 }
 
+#if DEBUG_FAKE_DATA
 void fake_data(){
     // DEBUG: Fake some data
     #if 0
@@ -216,6 +217,7 @@ void fake_data(){
 
     return;
 }
+#endif
 
 uint8_t m_channel_index = SENSOR_COUNT;
 static void adc_start_next_conversion()
@@ -342,12 +344,15 @@ void loop() {
 
   // This locks in the samples into the array and does some other stuff. This
   // controls the sample rate of the data
-  if(m_sample_flag) {
+  if(m_sample_flag)
+  {
     m_sample_flag = false;
 
 
     // DEBUG, force fake values for testing
+    #if DEBUG_FAKE_DATA
     fake_data();
+    #endif
 
     //DS3231_get(&rtcTime);
 
