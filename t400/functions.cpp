@@ -455,7 +455,6 @@ void clear() {
 
 // TODO: What namespace is this then?
 
-/******************* Float Math Start ********************/
 // This is a lookup from temperature to microvolts
 int32_t celcius_to_microvolts(float celcius)
 {
@@ -513,8 +512,10 @@ int16_t microvolts_to_celcius(int32_t microVolts)
     // returns a temperature, but we are comparing that to micovolts
     if(microVolts >= tempLow && microVolts <= tempHigh)
     {
+      /******************* Float Math Start ********************/
       // Why do we do this math?
       LookedupValue = ((float)-270 + (i)*10) + ((10 *(float)(microVolts - tempLow)) / ((float)(tempHigh - tempLow)));
+      /******************* Float Math End ********************/
       break;
     }
 
@@ -525,7 +526,6 @@ int16_t microvolts_to_celcius(int32_t microVolts)
 
   return tmp16;
 }
-/******************* Float Math End ********************/
 
 namespace ChargeStatus {
   
@@ -575,7 +575,8 @@ State get() {
   return CHARGED;
 }
 
-uint8_t getBatteryLevel() {
+uint8_t getBatteryLevel()
+{
 
   // VBAT_SENSE_V= 34 × VBAT/(34 + 18.7)
   // VBAT_SENSE_COUNTS = VBAT_SENSE_V / 3.3 * 1024
@@ -584,9 +585,15 @@ uint8_t getBatteryLevel() {
   #define VBAT_SENSE_EMPTY 720  // 3.6V
   
   // Note: We'll divide this into 5 sections so that the user gets a full battery for a little bit.
-  uint16_t vbatSenseCounts = analogRead(VBAT_SENSE);
-  uint8_t batteryLevel = ((vbatSenseCounts - VBAT_SENSE_EMPTY)*5)/(VBAT_SENSE_FULL - VBAT_SENSE_EMPTY);
+  uint16_t vbatSenseCounts;
   
+  vbatSenseCounts = analogRead(VBAT_SENSE);
+
+  // Prevent wrap, if <= lowest level just return 0 bars
+  if(vbatSenseCounts<=VBAT_SENSE_EMPTY) return 0;
+
+  uint8_t batteryLevel = ((vbatSenseCounts - VBAT_SENSE_EMPTY)*5)/(VBAT_SENSE_FULL - VBAT_SENSE_EMPTY);
+
   return batteryLevel<5?batteryLevel:4;
 
 }
