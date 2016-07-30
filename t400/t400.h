@@ -9,8 +9,12 @@
 #define SERIAL_OUTPUT_ENABLED   1  // Enable/disable serial output functionality. Saves 174 bytes
 
 // Calibration values
-#define MCP3424_CALIBRATION_MULTIPLY    1.00713
-#define MCP3424_CALIBRATION_ADD         5.826
+//#define MCP3424_CALIBRATION_MULTIPLY    1.00713
+//#define MCP3424_CALIBRATION_ADD         5.826
+
+#define MCP3424_CALIBRATION_MUL_INT     10071
+#define MCP3424_CALIBRATION_ADD_INT     58260
+
 #define LCD_CONTRAST                    0x018*7  // Sets the LCD contrast
 
 // Debugging
