@@ -14,11 +14,8 @@ enum Button {
     BUTTON_COUNT
 };
 
-namespace Buttons {
-
-  void setup();
-  bool pending();
-  uint8_t getPending();
-}
+void setupButtons();
+bool buttonPending();
+uint8_t buttonGetPending();
 
 #endif // BUTTONARRAY_HH

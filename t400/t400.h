@@ -15,12 +15,13 @@
 
 // Debugging
 #define DEBUG_JUNCTION_TEMPERATURE  0
+#define DEBUG_FAKE_DATA             0
 
 // Compile-time settings. Some of these should be set by the user during operation.
 #define SYNC_INTERVAL           1000       // millis between calls to sync()
 #define SENSOR_COUNT            4          // Number of sensors on the board (fixed)
 #define OUT_OF_RANGE_INT        32760      // Int value representing an invalid temp. measurement
-#define OUT_OF_RANGE            3276.0     // Double value representing an invalid temp. measurement
+//#define OUT_OF_RANGE            3276.0     // Double value representing an invalid temp. measurement
 
 // Graph display settings
 #define MAXIMUM_GRAPH_POINTS    100

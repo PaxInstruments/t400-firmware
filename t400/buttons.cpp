@@ -2,8 +2,6 @@
 #include "t400.h"
 #include <avr/sleep.h>
 
-namespace Buttons {
-
 uint8_t stuckButtonMask;
 uint8_t pendingButtons;
 
@@ -27,7 +25,7 @@ const uint8_t activeState[BUTTON_COUNT] = {
   HIGH,
 };
 
-void setup() {
+void setupButtons() {
 
   for(uint8_t b = 0; b < BUTTON_COUNT; b++) {
     if(activeState[b] == LOW) {
@@ -73,12 +71,12 @@ void buttonTask() {
 }
 
 
-bool pending() {
+bool buttonPending() {
   return (pendingButtons != 0);
 }
 
 // If a button was pressed, return it!
-uint8_t getPending() {
+uint8_t buttonGetPending() {
   uint8_t button = BUTTON_COUNT;
   
   noInterrupts();
@@ -96,8 +94,6 @@ uint8_t getPending() {
   return button;
 }
 
-} // namespace buttons
-
 // button interrupts
 ISR(INT6_vect) {
   // Workaround for the issue that ISR6 needs to be level sensitive to wake the processor from power down:
@@ -114,9 +110,9 @@ ISR(INT6_vect) {
     set_sleep_mode(SLEEP_MODE_PWR_DOWN);
   }
   
-  Buttons::buttonTask();
+  buttonTask();
   return;
 }
 
-ISR(INT3_vect) { Buttons::buttonTask();}
-ISR(PCINT0_vect) { Buttons::buttonTask();}
+ISR(INT3_vect) { buttonTask();}
+ISR(PCINT0_vect) { buttonTask();}
