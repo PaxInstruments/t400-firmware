@@ -85,6 +85,7 @@ uint8_t temperatureUnit;    // Measurement unit for temperature
 
 uint8_t graphChannel = 4;
 
+uint8_t btn_disable_count = 0;
 
 void rotateTemperatureUnit() {
   // Rotate the unit
@@ -142,7 +143,7 @@ void setup(void) {
   EICRA |= _BV(ISC21);    // Configure INT2 to trigger on falling edge
   EIMSK |= _BV(INT2);    // and enable the INT2 interrupt
 
-  Buttons::setup();
+  setupButtons();
 
   //config_sample_time_ms(1000);
 
@@ -239,7 +240,8 @@ static int16_t adc_read_ambient()
     return tmpint16;
 }
 
-static void readTemperatures() {
+static void readTemperatures()
+{
     int32_t measuredVoltageUv;
     int32_t compensatedVoltage;
     int32_t tmpint32;
@@ -271,21 +273,9 @@ static void readTemperatures() {
     compensatedVoltage = measuredVoltageUv + celcius_to_microvolts( (((float)(ambient))/10.0) );
 
     // Given a voltage, get the temperature
-    tmpflt = microvolts_to_celcius(compensatedVoltage);
-
-    // Convert from float to int
-    tmpint16 = ((int16_t)(tmpflt*10));
+    tmpint16 = microvolts_to_celcius(compensatedVoltage);
 
     /******************* Float Math End ********************/
-
-#if 0
-    // Now convert to C, F, K
-    if(tmpint16 != OUT_OF_RANGE_INT)
-    {
-      //temperature = convertTemperature(temperature + ambient_float);
-      tmpint16 = convertTemperatureInt(tmpint16);
-    }
-#endif
 
     temperatures_int[m_channel_index] = tmpint16;
 
@@ -295,7 +285,8 @@ static void readTemperatures() {
     return;
 }
 
-static void writeOutputs() {
+static void writeOutputs()
+{
 
   static char updateBuffer[BUFF_MAX];      // Scratch buffer to write serial/sd output into
   uint8_t index=0;
@@ -334,8 +325,10 @@ void resetTicks() {
 // This function is called periodically, and performs slow tasks:
 // Taking measurements
 // Updating the screen
-void loop() {
-  bool refresh_display_flag = false;  // If true, the display needs to be updated
+void loop()
+{
+  // If true, the display needs to be updated
+  bool refresh_display_flag = false;
 
   // This will read temperatures as fast as we can, this decouples the
   // slow reading from blocking the rest of the system
@@ -347,7 +340,6 @@ void loop() {
   if(m_sample_flag)
   {
     m_sample_flag = false;
-
 
     // DEBUG, force fake values for testing
     #if DEBUG_FAKE_DATA
@@ -368,8 +360,8 @@ void loop() {
   }
 
   // Check for button presses
-  if(Buttons::pending()) {
-    uint8_t button = Buttons::getPending();
+  if(buttonPending()) {
+    uint8_t button = buttonGetPending();
 
     switch(button){
     case BUTTON_POWER:
@@ -412,8 +404,10 @@ void loop() {
       if(!logging) {
         rotateTemperatureUnit();
         resetTicks();
-        refresh_display_flag = true;
+      }else{
+          btn_disable_count = 3;
       }
+      refresh_display_flag = true;
       break;
     case BUTTON_D:
       // Sensor display mode
@@ -451,9 +445,7 @@ void loop() {
     refresh_display_flag = false;
 
     // Actual draw of display, takes a bit of time
-    draw(
-      temperatures_int,
-      graphChannel,
+    draw(graphChannel,
       temperatureUnit,
       ptr,
       logIntervals[m_logInterval],
@@ -483,6 +475,9 @@ ISR(INT2_vect)
   if(isrTick == 0) {
     m_sample_flag = true;
   }
+
+  if(btn_disable_count>0) btn_disable_count--;
+
   return;
 }
 

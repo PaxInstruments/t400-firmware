@@ -51,8 +51,7 @@ void updateGraphScaling();
 
 void setupDisplay();
 
-void draw(int16_t* temperatures,
-        uint8_t graphChannel,
+void draw(uint8_t graphChannel,
         uint8_t temperatureUnit,
         char* fileName,
         uint8_t logInterval,
@@ -69,7 +68,7 @@ int32_t celcius_to_microvolts(float jTemp);
 // Converts the thermocouple µV reading into some usable °C
 // @param microVolt reading from the ADC
 // @return Temperature, in ???
-float microvolts_to_celcius(int32_t microVolts);
+int16_t microvolts_to_celcius(int32_t microVolts);
 
 
 #endif

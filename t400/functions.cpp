@@ -44,6 +44,8 @@ uint8_t axisDigits;     // Number of digits to display in the axis labels (ex: '
 int16_t minTempInt;
 int16_t maxTempInt;
 
+extern uint8_t btn_disable_count;
+
 // Helper functions
 // Prints an int and returns the pointer to buffer
 #define printi(B,I)   (sprintf(buf,"%d",(I)),(B))
@@ -192,7 +194,6 @@ uint8_t temperature_to_pixel(int16_t temp)
 }
 
 void draw(
-  int16_t* temperatures,
   uint8_t graphChannel,
   uint8_t temperatureUnit,
   char* fileName,
@@ -275,7 +276,7 @@ void draw(
 
             // if the sensor is out of range, don't show it. If we are showing one
             // channel, ignore the others
-            if(temperatures[sensor] == OUT_OF_RANGE_INT || (sensor != graphChannel && graphChannel < 4) )
+            if(graph[sensor][graphCurrentPoint] == OUT_OF_RANGE_INT || (sensor != graphChannel && graphChannel < 4) )
               continue;
 
             tmp16 = convertTemperatureInt(graph[sensor][graphCurrentPoint]);
@@ -316,6 +317,11 @@ void draw(
     break;
 
     case 6:
+
+    if(btn_disable_count>0)
+    {
+        u8g.drawStr(11, DISPLAY_HEIGHT - page*8-1,  "Disabled while logging");
+    }else{
       // Draw status bar
       //u8g.drawStr(0,  15, printi(buf,ambient));         // Ambient temperature
       u8g.drawStr(0,  15, "TypK"); 
@@ -383,8 +389,8 @@ void draw(
         u8g.drawLine(battX+3, battY+1, battX+3, battY+5);
         break;
       }
-
-      break;
+    }
+    break;
 
     case 7:
       // Draw thermocouple readings
@@ -398,11 +404,11 @@ void draw(
       #if 1
       for(uint8_t sensor = 0; sensor < SENSOR_COUNT; sensor++)
       {
-        if(temperatures[sensor] == OUT_OF_RANGE_INT)
+        if(graph[sensor][graphCurrentPoint] == OUT_OF_RANGE_INT)
         {
           u8g.drawStr(sensor*34,   6,  " ----");
         }else {
-          u8g.drawStr(sensor*34, 6, printtemp(buf,temperatures[sensor]));
+          u8g.drawStr(sensor*34, 6, printtemp(buf,graph[sensor][graphCurrentPoint]));
         }
       }
 
@@ -469,11 +475,12 @@ int32_t celcius_to_microvolts(float celcius)
 }
 
 // This is a lookup for temperature given microvolts
-float microvolts_to_celcius(int32_t microVolts)
+int16_t microvolts_to_celcius(int32_t microVolts)
 {
-  float LookedupValue;
+  float LookedupValue = 0.0;
   uint16_t tempLow;
   uint16_t tempHigh;
+  int16_t tmp16;
 
   // Input the junction temperature compensated voltage such that the junction
   // temperature is compensated to 0°C
@@ -484,7 +491,7 @@ float microvolts_to_celcius(int32_t microVolts)
   // Check if it's in range
   if(microVolts > TEMP_TYPE_K_MAX_CONVERSION || microVolts < TEMP_TYPE_K_MIN_CONVERSION)
   {
-    return OUT_OF_RANGE;
+    return OUT_OF_RANGE_INT;
   }
   
   // Now itterate through the temperature lookup table to find
@@ -507,7 +514,10 @@ float microvolts_to_celcius(int32_t microVolts)
 
   }
 
-  return LookedupValue;
+  // Convert from float to int
+  tmp16 = ((int16_t)(LookedupValue*10));
+
+  return tmp16;
 }
 /******************* Float Math End ********************/
 
