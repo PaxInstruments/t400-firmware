@@ -15,7 +15,7 @@
 
 // Debugging
 #define DEBUG_JUNCTION_TEMPERATURE  0
-#define DEBUG_FAKE_DATA             1
+#define DEBUG_FAKE_DATA             0
 
 // Compile-time settings. Some of these should be set by the user during operation.
 #define SYNC_INTERVAL           1000       // millis between calls to sync()
