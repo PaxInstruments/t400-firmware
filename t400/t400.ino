@@ -173,6 +173,11 @@ void stopLogging() {
 #if DEBUG_FAKE_DATA
 void fake_data(){
     // DEBUG: Fake some data
+
+    temperatures_int[0] = OUT_OF_RANGE_INT;
+    temperatures_int[1] = OUT_OF_RANGE_INT;
+    temperatures_int[2] = OUT_OF_RANGE_INT;
+    temperatures_int[3] = OUT_OF_RANGE_INT;
     #if 0
     // EXTREME!
     temperatures_int[0] = 30000; // 3270.9 C
@@ -203,8 +208,8 @@ void fake_data(){
     static int16_t step=5;
     temperatures_int[0] = val;
     temperatures_int[1] = val+50;
-    temperatures_int[2] = val+100;
-    temperatures_int[3] = val+150;
+    //temperatures_int[2] = val+100;
+    //temperatures_int[3] = val+150;
     val+=step;
     if(val>=400 || val<= 200) step=step*-1;
     #endif
@@ -277,7 +282,9 @@ static void readTemperatures()
 
     /******************* Float Math End ********************/
 
+    #if !DEBUG_FAKE_DATA
     temperatures_int[m_channel_index] = tmpint16;
+    #endif
 
     // We are done with this channel, kick off the next one
     adc_start_next_conversion();
@@ -370,6 +377,9 @@ void loop()
         clear();
         Backlight::set(0);
         Power::shutdown();
+      }else{
+        btn_disable_count = 3;
+        refresh_display_flag = true;
       }
       break;
 
@@ -396,8 +406,10 @@ void loop()
 
         resetGraph();  // Reset the graph, to keep the x axis consistent
         resetTicks();
-        refresh_display_flag = true;
+      }else{
+          btn_disable_count = 3;
       }
+      refresh_display_flag = true;
       break;
     case BUTTON_C:
       // Cycle temperature units
@@ -412,7 +424,8 @@ void loop()
     case BUTTON_D:
       // Sensor display mode
       graphChannel = (graphChannel + 1) % GRAPH_CHANNELS_COUNT;
-      while(graphChannel < 4 & temperatures_int[graphChannel] == OUT_OF_RANGE_INT) {
+      while( (graphChannel < SENSOR_COUNT) && (temperatures_int[graphChannel] == OUT_OF_RANGE_INT) )
+      {
         graphChannel = (graphChannel + 1) % GRAPH_CHANNELS_COUNT;
       }
       refresh_display_flag = true;
