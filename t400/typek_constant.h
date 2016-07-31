@@ -4,6 +4,7 @@
 // Macro for accessing thermocouple data
 // Usage: temperatureC = lookupThermocouleData(microvolts)
 #define lookupThermocouleData(index) (pgm_read_dword(tempTypK + index))
+#define thermocoupleMicrovoltLookup(I)  lookupThermocouleData(I)
 
 // Note: if switching to eeprom, could look like this instead:
 //  #define lookupThermocouleData(index) (eeprom_read_dword(index));
@@ -17,8 +18,13 @@
 // Note: if the table changes, update these by hand
 #define TEMP_TYPE_K_MIN_CONVERSION 0
 #define TEMP_TYPE_K_MAX_CONVERSION 61277
-#define TK_OFFSET 6458
 
+// Add this to get all positive
+#define TK_OFFSET       6458
+// This is the lowest temp in the mv->table (deg C) (i=0)
+#define TK_MIN_TEMP     (-270)
+
+// Each entry is 10C apart
 // Usage: temperatureC = tempTypK[microvolts]
 const uint16_t tempTypK[TEMP_TYPE_K_LENGTH] PROGMEM = 
 { 

@@ -456,23 +456,29 @@ void clear() {
 // TODO: What namespace is this then?
 
 // This is a lookup from temperature to microvolts
-int32_t celcius_to_microvolts(float celcius)
+int32_t celcius_to_microvolts(int16_t celcius)
 {
   int32_t voltage = 0;
-  uint8_t i = 0;
-  uint16_t tempLow;
-  uint16_t tempHigh;
+  uint8_t lut_index = 0;
+  uint16_t tempWindowLowMicrovolts;
+  uint16_t tempWindowHighMicrovolts;
 
-  // We do this because...?
-  i = celcius/10 + 27;
+  // lut = Look Up Table
+
+  // Original
+  //lut_index = ((float)celcius) /10 + 27;
+
+  // Int math, we are in 10ths of degs.  We know 0C is at index 27, so if each step
+  // is 10C, ournum/100 is the number of steps above/below 0...add index 27
+  lut_index = ((celcius/100)+27);
 
   // This gets us a 10C range this value could be in
-  tempLow = lookupThermocouleData(i);
-  tempHigh = lookupThermocouleData(i + 1);
+  tempWindowLowMicrovolts = thermocoupleMicrovoltLookup(lut_index);
+  tempWindowHighMicrovolts = thermocoupleMicrovoltLookup(lut_index + 1);
 
   // This interpolates the voltage between the 2 points??
   // ??? (low - offset) + ((temp - VAR) * (delta/10))
-  voltage = tempLow - TK_OFFSET + (celcius - (i*10-270)) * (tempHigh - tempLow)/10;
+  voltage = tempWindowLowMicrovolts - TK_OFFSET + (celcius - (lut_index*10-270)) * (tempWindowHighMicrovolts - tempWindowLowMicrovolts)/10;
 
   //return i; // Displays '29.0' on the LCD as expected
   //return tempTypK[29]; // Displays '7256.0'on LCD
@@ -482,10 +488,17 @@ int32_t celcius_to_microvolts(float celcius)
 // This is a lookup for temperature given microvolts
 int16_t microvolts_to_celcius(int32_t microVolts)
 {
+#if 0
+  float tmpflt,tmpflt2,tmpflt3;
   float LookedupValue = 0.0;
-  uint16_t tempLow;
-  uint16_t tempHigh;
-  int16_t tmp16;
+#else
+  int16_t tmp16,tmp16_2;
+  int16_t interpolated_temp_value;
+  int32_t tmp32;
+#endif
+
+  uint16_t tempWindowLowMicrovolts;
+  uint16_t tempWindowHighMicrovolts;
 
   // Input the junction temperature compensated voltage such that the junction
   // temperature is compensated to 0°C
@@ -505,26 +518,62 @@ int16_t microvolts_to_celcius(int32_t microVolts)
   // TODO: Binary search here to decrease lookup time
   for(uint16_t i = 0; i<TEMP_TYPE_K_LENGTH; i++)
   {
-    tempLow = lookupThermocouleData(i);
-    tempHigh = lookupThermocouleData(i + 1);
+      // tempLow is the
+    tempWindowLowMicrovolts = thermocoupleMicrovoltLookup(i);
+    tempWindowHighMicrovolts = thermocoupleMicrovoltLookup(i + 1);
     
     // NOTE: I think there is a bug here, the lookupThermocouleData macro
     // returns a temperature, but we are comparing that to micovolts
-    if(microVolts >= tempLow && microVolts <= tempHigh)
+    if(microVolts >= tempWindowLowMicrovolts && microVolts <= tempWindowHighMicrovolts)
     {
-      /******************* Float Math Start ********************/
-      // Why do we do this math?
-      LookedupValue = ((float)-270 + (i)*10) + ((10 *(float)(microVolts - tempLow)) / ((float)(tempHigh - tempLow)));
-      /******************* Float Math End ********************/
+
+        // NOTE: This is a
+
+        #if 1
+        // The window lowest temperature
+        tmp16 = ( (TK_MIN_TEMP*10) + (i)*100); // max is 16400-2700=13700. Min is -270=-2700
+
+        // The number of microvolts above the lower temp value, times 100
+        // Max delta is 520, so max value here is 52000 (this is why we need the int32)
+        tmp32 = (100 *(microVolts - tempWindowLowMicrovolts));
+
+        // NOTE: The max could be 52000, why not divide by 2 (>>1) to get within the
+        // int16 range, then multiply by 2 after the next operation?
+
+        // Microvolt delta for the window
+        // Max delta is 520
+        tmp16_2 = (tempWindowHighMicrovolts - tempWindowLowMicrovolts);
+
+
+        // worst case1 is 13700 + (51900/5200)
+        // worst case2 is -2700 + (51900/5200)
+        interpolated_temp_value =  tmp16 + ( tmp32 / tmp16_2);
+        // NOTE: This operation ^ will always be an int16, since tmp32 and tmp16_2 are related.
+
+        #else
+        // ORIGINAL
+        /******************* Float Math Start ********************/
+        // Float representation of the window lowest temperature
+        tmpflt = ( (float)TK_MIN_TEMP + (i)*10);
+        // Float representation of the number of microvolts above the lower temp value, times 10
+        tmpflt2 = (10 *(float)(microVolts - tempWindowLowMicrovolts));
+        // Microvolt delta for the window
+        tmpflt3 = ((float)(tempWindowHighMicrovolts - tempWindowLowMicrovolts));
+
+        LookedupValue =  tmpflt + ( tmpflt2 / tmpflt3);
+        // Convert from float to int
+        interpolated_temp_value = ((int16_t)(LookedupValue*10));
+        /******************* Float Math End ********************/
+        #endif
+
+
       break;
     }
 
   }
 
-  // Convert from float to int
-  tmp16 = ((int16_t)(LookedupValue*10));
 
-  return tmp16;
+  return interpolated_temp_value;
 }
 
 namespace ChargeStatus {

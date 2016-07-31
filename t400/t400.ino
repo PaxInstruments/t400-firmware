@@ -252,7 +252,7 @@ static void readTemperatures()
     int32_t compensatedVoltage;
     int32_t tmpint32;
     int16_t tmpint16=0;
-    float tmpflt;
+    //float tmpflt;
 
     // Skip if we don't have a temperature to measure?
     //if(!thermocoupleAdc.measurementReady()) return;
@@ -268,20 +268,31 @@ static void readTemperatures()
     // getMeasurementUv returns an int32_t which is the value in micro volts for this channel
     tmpint32 = thermocoupleAdc.getMeasurementUv();
 
+#if 0
     /******************* Float Math Start ********************/
-
     // Now we need to calibrate things.  This is y=mx+b
     // Calibration value: MCP3424_OFFSET_CALIBRATION
     tmpflt =  (((float)tmpint32)* MCP3424_CALIBRATION_MULTIPLY) + MCP3424_CALIBRATION_ADD;
     measuredVoltageUv = (uint32_t)tmpflt;
+    /******************* Float Math End ********************/
+    //(61277 * 1.00713) + 5.826 = 61719.73101 -> 61719
+    //(7458 * 1.00713) + 5.826 = 7517.00154 -> 7517
+#else
+    // max microvolts is 61277
+    // max could be (61277*10071)+58260 = 617178927
+    //25C (7458*10071)+58260 = 75167778
+    tmpint32 =  (tmpint32*MCP3424_CALIBRATION_MUL_INT) + MCP3424_CALIBRATION_ADD_INT;
+    // max could be 617178927 / 10000 = 61717
+    // 25C 75167778/10000 = 7516
+    tmpint32 = tmpint32 / 10000;
+#endif
 
     // Get the measured voltage, removing the ambient junction temperature
-    compensatedVoltage = measuredVoltageUv + celcius_to_microvolts( (((float)(ambient))/10.0) );
+    //compensatedVoltage = measuredVoltageUv + celcius_to_microvolts( (((float)(ambient))/10.0) );
+    compensatedVoltage = measuredVoltageUv + celcius_to_microvolts(ambient);
 
     // Given a voltage, get the temperature
     tmpint16 = microvolts_to_celcius(compensatedVoltage);
-
-    /******************* Float Math End ********************/
 
     #if !DEBUG_FAKE_DATA
     temperatures_int[m_channel_index] = tmpint16;
