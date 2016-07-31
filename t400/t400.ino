@@ -37,6 +37,8 @@ Firmware for the Pax Instruments T400 temperature datalogger
 #include "functions.h"        // Misc. functions
 #include "sd_log.h"           // SD card utilities
 
+#include <avr/wdt.h>
+
 #define BUFF_MAX         80   // Size of the character buffer
 
 char fileName[] =        "LD0001.CSV";
@@ -147,6 +149,8 @@ void setup(void) {
   setupButtons();
 
   timer1_reset();
+
+  wdt_enable(WDTO_2S);
 
   // Kick off the ADC sampling loop
   adc_start_next_conversion();
@@ -487,6 +491,8 @@ void loop()
     );
 
   }
+
+  wdt_reset();
 
   // Sleep if we are on battery power
   // Note: Don't sleep if there is power, in case we need to communicate over USB
