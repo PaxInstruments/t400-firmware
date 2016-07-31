@@ -6,7 +6,7 @@
 
 // Feature settings
 #define SD_LOGGING_ENABLED      1  // Enable/disable all SD card functionality. Saves 8,606 bytes
-#define SERIAL_OUTPUT_ENABLED   1  // Enable/disable serial output functionality. Saves 174 bytes
+#define SERIAL_OUTPUT_ENABLED   1 // Enable/disable serial output functionality. Saves 174 bytes
 
 // Calibration values
 //#define MCP3424_CALIBRATION_MULTIPLY    1.00713

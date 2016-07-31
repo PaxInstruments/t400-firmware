@@ -17,6 +17,118 @@ SdFile file;
 
 uint32_t syncTime      = 0;     // time of last sync(), in millis()
 
+
+#if 0
+// NOTE: This code will make subdirectories to get around a max file
+// limit.  the problem is, mkdir takes up around 1k of flash!!! So we
+// are not going to use it
+
+#define MAX_DIRECTORIES     100
+#define MAX_FILES           100
+//#define DEBUG_FILE_SEARCH
+bool find_filename(uint8_t * dirid_ptr, uint8_t * fileid_ptr)
+{
+    char outbuff[30];
+    uint8_t dirid,fileid;
+
+    // Start in root
+    sd.chdir(1);
+
+    #ifdef DEBUG_FILE_SEARCH
+    sprintf(outbuff,"Search dir\n");
+    Serial.print(outbuff);
+    #endif
+    for(dirid=1;dirid<MAX_DIRECTORIES;dirid++)
+    {
+        // Look for folder DATAx, if it exists see if we can add a file, if
+        // it doesn't exist, make it and select this with file id = 1
+
+        #ifdef DEBUG_FILE_SEARCH
+        sprintf(outbuff,"Try dir %d\n",dirid);
+        Serial.print(outbuff);
+        #endif
+
+        sprintf(outbuff,"DATA%d",dirid);
+        if(!sd.chdir(outbuff,false))
+        {
+            // Folder doesn't exist, make it
+            if(!sd.mkdir(outbuff,false))
+            {
+                #ifdef DEBUG_FILE_SEARCH
+                sprintf(outbuff,"mkdir failed %d\n",dirid);
+                Serial.print(outbuff);
+                #endif
+                break;
+            }
+            // We did make the directory
+            fileid = 1;
+            #ifdef DEBUG_FILE_SEARCH
+            sprintf(outbuff,"mkdir good %d\n",dirid);
+            Serial.print(outbuff);
+            #endif
+            break;
+        }else{
+            // Folder does exist, see how many files are in here
+
+            // Actually go into the folder
+            sd.chdir(outbuff,true);
+
+            for(fileid=1;fileid<MAX_FILES;fileid++)
+            {
+                sprintf(outbuff,"FILE%d",fileid);
+                if(!sd.exists(outbuff))
+                {
+                    // This file doesn't exist, use it
+                    //Serial.print(outbuff);
+                    #ifdef DEBUG_FILE_SEARCH
+                    if(!file.open(outbuff, O_CREAT | O_WRITE | O_EXCL))
+                    {
+                        Serial.print("write err\n");
+                    }
+                    file.clearWriteError();
+                    file.print("Test");
+                    file.println();
+                    file.flush();
+                    file.close();
+
+                    sprintf(outbuff,"Use file %d\n",fileid);
+                    Serial.print(outbuff);
+                    #endif
+
+                    break;
+                }
+            }
+            if(fileid<99) break;
+
+            // if we have over 100 files, go to next directory
+
+            #ifdef DEBUG_FILE_SEARCH
+            Serial.print("Over 100 files\n");
+            #endif
+
+            // got back to root
+            sd.chdir(1);
+
+        }
+    }
+
+    *dirid_ptr = dirid;
+    *fileid_ptr = fileid;
+
+    // got back to root
+    sd.chdir(1);
+
+    if(dirid>=99) return false;
+
+    #ifdef DEBUG_FILE_SEARCH
+    sprintf(outbuff,"Dir:%d File:%d\n",dirid,fileid);
+    Serial.print(outbuff);
+    #endif
+
+    return true;
+}
+#endif
+
 void init() {
   close();
   #if SD_LOGGING_ENABLED
@@ -31,16 +143,13 @@ bool open(char* fileName) {
   // Create LDxxxx.CSV for the lowest value of x.
 
   #if SD_LOGGING_ENABLED
+
   uint16_t i = 0;
   do {
-    fileName[2] = (i/1000) % 10 + '0';
-    fileName[3] = (i/100)  % 10 + '0';
-    fileName[4] = (i/10)   % 10 + '0';
-    fileName[5] = i        % 10 + '0';
+    sprintf(fileName,"LD%04d.CSV",i);
     i++;
   }
   while(sd.exists(fileName));
-
 
   if(!file.open(fileName, O_CREAT | O_WRITE | O_EXCL)) {
 //    error_P("file open");

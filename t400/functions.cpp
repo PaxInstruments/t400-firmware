@@ -45,6 +45,7 @@ int16_t minTempInt;
 int16_t maxTempInt;
 
 extern uint8_t btn_disable_count;
+extern uint8_t sd_full_count;
 
 // Helper functions
 // Prints an int and returns the pointer to buffer
@@ -321,6 +322,8 @@ void draw(
     if(btn_disable_count>0)
     {
         u8g.drawStr(11, DISPLAY_HEIGHT - page*8-1,  "Disabled while logging");
+    }else if(sd_full_count>0){
+        u8g.drawStr(40, DISPLAY_HEIGHT - page*8-1,  "SD max files!");
     }else{
       // Draw status bar
       //u8g.drawStr(0,  15, printi(buf,ambient));         // Ambient temperature

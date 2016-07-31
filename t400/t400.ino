@@ -89,6 +89,7 @@ uint8_t temperatureUnit;    // Measurement unit for temperature
 uint8_t graphChannel = 4;
 
 uint8_t btn_disable_count = 0;
+uint8_t sd_full_count = 0;
 
 void rotateTemperatureUnit() {
   // Rotate the unit
@@ -121,9 +122,9 @@ void setup(void) {
 
   Power::setup();
   ChargeStatus::setup();
-  #if SERIAL_OUTPUT_ENABLED
+  //#if SERIAL_OUTPUT_ENABLED
   Serial.begin(9600);
-  #endif
+  //#endif
 
   Wire.begin(); // Start using the Wire library; does the i2c communication.
 
@@ -158,12 +159,17 @@ void setup(void) {
   return;
 }
 
-void startLogging() {
-
+void startLogging()
+{
+  bool result;
   if(logging) return;
-
   sd::init();
-  logging = sd::open(fileName);
+  result = sd::open(fileName);
+  if(!result)
+  {
+      sd_full_count = 3;
+  }
+  logging = result;
   return;
 }
 
@@ -523,6 +529,7 @@ ISR(INT2_vect)
   }
 
   if(btn_disable_count>0) btn_disable_count--;
+  if(sd_full_count>0) sd_full_count--;
 
   return;
 }
@@ -635,4 +642,6 @@ ISR(TIMER1_COMPA_vect)
 }
 #endif
 
+
 //eof
+
