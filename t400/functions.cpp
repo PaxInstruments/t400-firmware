@@ -49,7 +49,7 @@ extern uint8_t sd_full_count;
 
 // Helper functions
 // Prints an int and returns the pointer to buffer
-#define printi(B,I)   (sprintf(buf,"%d",(I)),(B))
+#define printi(B,I)   (sprintf((B),"%d",(I)),(B))
 
 char * printtemp(char * buf, int16_t temp)
 {
@@ -205,11 +205,12 @@ void draw(
 
   // Graphic commands to redraw the complete screen should be placed here
   char buf[8];
+
   uint8_t page = 0;
   uint8_t x;
   //uint8_t debug_point=0;
   //int16_t debug_point2=0;
-  uint8_t num_points;
+  uint8_t num_points=0;
   uint8_t battX = 128;
   uint8_t battY = 9;
 
@@ -246,6 +247,7 @@ void draw(
         // the code below is run 6 times!  This is super inefficient.
         // Should fix but this is how the u8g library works :-/
 
+
         // Draw axis labels and marks
         for(uint8_t interval = 0; interval < GRAPH_INTERVALS; interval++)
         {
@@ -256,12 +258,12 @@ void draw(
             // TODO: Write a space string, then over write with number, drrr
             // Add spaces for right justified
             spaces = axisDigits-numlength(tmp16);
+            if(spaces>3) spaces=3;
             for(x=0;x<spaces;x++)
                 sprintf(&(buf[x])," ");
             sprintf(&(buf[spaces]), "%d", tmp16);
             u8g.drawStr(0, DISPLAY_HEIGHT - interval*10,  buf);
         }
-
 
         // Calculate how many graph points to display.
         // If the number of axis digits is >2, scale back how many
@@ -285,17 +287,14 @@ void draw(
             // Get the position of the latest point
             //p = temperature_to_pixel(graph[sensor][graphCurrentPoint]);
             p = temperature_to_pixel(tmp16);
-#if 0
-            if(sensor==3)
-            {
-                debug_point = p;
-                debug_point2 = graph[sensor][graphCurrentPoint];
-            }
-#endif
 
             // Draw the channel number at the latest point
-            u8g.drawStr(113+5*sensor, 3 + p, printi(buf,sensor+1));
-
+            {
+                char chan[2];
+                chan[0]  = '1'+sensor;
+                chan[1] = 0;
+                u8g.drawStr(113+5*sensor, 3 + p, chan);
+            }
             // Now, draw all the points
             index = graphCurrentPoint;
             for(uint8_t point = 0; point < num_points; point++)
@@ -421,18 +420,12 @@ void draw(
         }
       }
 
-      #elif 0
-      // DEBUG: Write variable values to the spaces rather than the current temp
-      u8g.drawStr(0*34,   6,  printtemp(buf,temperatures[0]));
-      u8g.drawStr(1*34,   6,  printtemp(buf,temperatures[1]));
-      u8g.drawStr(2*34,   6,  printtemp(buf,temperatures[2]));
-      u8g.drawStr(3*34,   6,  printtemp(buf,temperatures[3]));
       #else
       // DEBUG: Write variable values to the spaces rather than the current temp
-      u8g.drawStr(0*34,   6,  printi(buf,graphScale));
-      u8g.drawStr(1*34,   6,  printi(buf,minTempInt));
-      u8g.drawStr(2*34,   6,  printi(buf,debug_point));
-      u8g.drawStr(3*34,   6,  printi(buf,debug_point2));
+      u8g.drawStr(0*34,   6,  printi(buf,temperatures_int[0]));
+      u8g.drawStr(1*34,   6,  printi(buf,temperatures_int[1]));
+      u8g.drawStr(2*34,   6,  printi(buf,temperatures_int[2]));
+      u8g.drawStr(3*34,   6,  printi(buf,temperatures_int[3]));
       #endif
 
       break;
@@ -443,6 +436,7 @@ void draw(
     page++;
 
   }while( u8g.nextPage() );
+
   
   return;
 }
@@ -454,9 +448,6 @@ void clear() {
 
   return;
 }
-
-
-// TODO: What namespace is this then?
 
 // This is a lookup from temperature to microvolts
 int32_t celcius_to_microvolts(int16_t celcius)
