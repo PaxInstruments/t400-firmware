@@ -170,9 +170,6 @@ bool open(char* fileName)
       sprintf(fileName,"LD%04d.CSV",i);
   }while(sd.exists(fileName));
 
-  Serial.print("Found file");
-  Serial.println(fileName);
-
   if(!file.open(fileName, O_CREAT | O_WRITE | O_EXCL)) {
 //    error_P("file open");
     return false;
