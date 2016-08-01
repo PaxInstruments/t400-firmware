@@ -39,7 +39,7 @@ Firmware for the Pax Instruments T400 temperature datalogger
 
 #include <avr/wdt.h>
 
-#define BUFF_MAX         80   // Size of the character buffer
+#define BUFF_MAX         40   // Size of the character buffer
 
 char fileName[] =        "LD0001.CSV";
 
@@ -301,8 +301,10 @@ static void readTemperatures()
     //compensatedVoltage = measuredVoltageUv + celcius_to_microvolts( (((float)(ambient))/10.0) );
     compensatedVoltage = measuredVoltageUv + celcius_to_microvolts(ambient);
 
+
     // Given a voltage, get the temperature
     tmpint16 = microvolts_to_celcius(compensatedVoltage);
+
 
     #if !DEBUG_FAKE_DATA
     temperatures_int[m_channel_index] = tmpint16;
@@ -368,6 +370,8 @@ void loop()
 {
   // If true, the display needs to be updated
   bool refresh_display_flag = false;
+
+  wdt_reset();
 
   // This will read temperatures as fast as we can, this decouples the
   // slow reading from blocking the rest of the system
@@ -498,13 +502,12 @@ void loop()
 
   }
 
-  wdt_reset();
-
   // Sleep if we are on battery power
   // Note: Don't sleep if there is power, in case we need to communicate over USB
   if(ChargeStatus::get() == ChargeStatus::DISCHARGING) {
     Power::sleep();
   }
+
 
   return;
 }

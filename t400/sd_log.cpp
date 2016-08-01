@@ -6,6 +6,8 @@
 #include <SdFat.h>
 #endif
 
+#include <avr/wdt.h>
+
 extern uint8_t temperatureUnit;
 
 namespace sd {
@@ -139,17 +141,37 @@ void init() {
   #endif
 }
 
-bool open(char* fileName) {
+bool open(char* fileName)
+{
   // Create LDxxxx.CSV for the lowest value of x.
 
   #if SD_LOGGING_ENABLED
 
   uint16_t i = 0;
-  do {
-    sprintf(fileName,"LD%04d.CSV",i);
-    i++;
-  }
-  while(sd.exists(fileName));
+  // NOTE: Could jump by 100 here, take up like 60 bytes of flash
+#if 0
+  do{
+      i+=100;
+      sprintf(fileName,"LD%04d.CSV",i);
+  }while(sd.exists(fileName));
+  // We now know that value doesn't exist, go back 100 and search from here
+  i-=100;
+#endif
+  do{
+      i+=10;
+      sprintf(fileName,"LD%04d.CSV",i);
+      // This could take a while, so reset the watchdog here
+      wdt_reset();
+  }while(sd.exists(fileName));
+  // We now know that value doesn't exist, go back 10 and search from here
+  i-=10;
+  do{
+      i+=1;
+      sprintf(fileName,"LD%04d.CSV",i);
+  }while(sd.exists(fileName));
+
+  Serial.print("Found file");
+  Serial.println(fileName);
 
   if(!file.open(fileName, O_CREAT | O_WRITE | O_EXCL)) {
 //    error_P("file open");
